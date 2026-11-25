@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#c43d28">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Intervals">
+<title>Interval Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: trackside stopwatch: terse, huge numbers, readable at a glance mid-rep
+   IDEA: a stadium lap board beside a running track
+   PICTURE: full-screen colour field per segment, one giant countdown, a lane-line progress bar
+   COLOUR+TYPE: track red / infield green / slate; Barlow Condensed numerals, Barlow text
+   LAYOUT: one column, thumb-reach controls at the bottom */
+:root{color-scheme:light dark;--bg:light-dark(#f5f5f2,#0d110f);--ink:light-dark(#121513,#f1f2ee);--mut:light-dark(#5d635f,#9aa29d);--card:light-dark(#fff,#171c19);--line:light-dark(#dfe1dc,#29302b);--work:#c43d28;--rec:#2b7448;--easy:#3d4f5c;--acc:light-dark(#c43d28,#ef5b42)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent}
+.scr{max-width:560px;margin:0 auto;padding:20px max(18px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
+.hero{background:var(--work);color:#fff;padding:max(24px,env(safe-area-inset-top)) 0 0}
+.hero .in{max-width:560px;margin:0 auto;padding:0 18px 14px}
+.lanes{height:58px;background:repeating-linear-gradient(180deg,rgba(255,255,255,.75) 0 2px,transparent 2px 14px)}
+h1{font:700 48px/1.05 'Barlow Condensed',sans-serif;margin:0 0 4px}
+h2{font:600 24px/1.2 'Barlow Condensed',sans-serif;margin:28px 0 10px}
+.sub{margin:0;opacity:.88}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.go{display:block;width:100%;min-height:60px;border:0;border-radius:14px;background:var(--acc);color:#fff;font:700 24px/1 'Barlow Condensed',sans-serif}
+.go:disabled{opacity:.4}
+.sec{min-height:56px;border-radius:14px;border:2px solid currentColor;background:transparent;font:600 18px/1.1 'Barlow Condensed',sans-serif;padding:0 10px}
+.link{background:none;border:0;color:var(--mut);text-decoration:underline;min-height:44px;padding:0;margin-top:6px}
+.presets{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 16px;margin:0 -2px}
+.presets button,.chips button{flex:none;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-weight:500;white-space:nowrap}
+.chips button[aria-pressed=true],.presets button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:4px 16px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;border-bottom:1px solid var(--line)}
+.row:last-child{border:0}
+.lab{font-weight:500}
+.num,.step{display:flex;align-items:center;gap:6px}
+.num input,.step input{width:92px;font:600 21px/1 'Barlow Condensed',sans-serif;text-align:right;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.num span{color:var(--mut);width:2.2em}
+.step input{width:60px;text-align:center}
+.step button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--bg);font-size:22px;line-height:1}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:transparent;min-height:44px;padding:0 14px}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 0 14px;border-bottom:1px solid var(--line)}
+.sw{display:flex;align-items:center;gap:10px;min-height:44px;font-weight:500}
+.sw input{width:22px;height:22px;accent-color:var(--acc);margin:0}
+.sum{font:600 21px/1.3 'Barlow Condensed',sans-serif;margin:18px 0 8px;text-wrap:balance}
+.opts{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:14px}
+.note{color:var(--mut);font-size:14px}
+.hl{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.hl button{width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-height:56px}
+.hl span{display:block;font-weight:600}.hl small{color:var(--mut);font-size:14px}
+#run{max-width:none;min-height:100dvh;display:flex;flex-direction:column;gap:14px;color:#fff;background:var(--easy);transition:background .4s;padding-top:max(18px,env(safe-area-inset-top))}
+#run[data-k=work]{background:var(--work)}#run[data-k=rec]{background:var(--rec)}#run[data-k=idle]{background:#1b221e}#run.paused{background:#4b4b47}
+#run>*{width:100%;max-width:640px;margin-inline:auto}
+.rtop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ph{font:700 28px/1.1 'Barlow Condensed',sans-serif}
+.gps{font-size:14px;padding:5px 11px;border-radius:999px;background:rgba(0,0,0,.25);white-space:nowrap}
+.gps::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#f4c430;vertical-align:1px}
+.gps[data-q=ok]::before{background:#7ee08f}.gps[data-q=bad]::before{background:#ff6b5b}
+.bigwrap{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;min-height:200px}
+.big{font:700 clamp(104px,34vw,230px)/.9 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bigu{font:600 22px/1.3 'Barlow Condensed',sans-serif;opacity:.88;margin-top:6px;max-width:28em}
+.lane{height:14px;border-radius:7px;background:rgba(255,255,255,.22);overflow:hidden;position:relative}
+.lane i{position:absolute;inset:0 auto 0 0;background:#fff;width:0;transition:width .25s linear}
+.next{margin:0;font-weight:500;opacity:.92}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;border-radius:14px;overflow:hidden}
+.stats div{background:rgba(0,0,0,.2);padding:10px 14px}
+.stats b{display:block;font:700 36px/1.1 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stats span{font-size:13px;opacity:.88}
+#run .ctl{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+#run .go{background:#fff;color:#121513}
+#run .sec.warn{background:#fff;color:#c43d28;border-color:#fff}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kpis div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.kpis b{display:block;font:700 34px/1.1 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpis span{color:var(--mut);font-size:14px}
+.bars{display:grid;gap:8px}
+.br{display:grid;grid-template-columns:3.6em minmax(0,1fr) auto;gap:10px;align-items:center}
+.br .t{height:26px;background:var(--line);border-radius:6px;overflow:hidden}
+.br .t i{display:block;height:100%;background:var(--acc);border-radius:6px}
+.br .t i.best{background:var(--ink)}
+.br b{font:600 19px/1 'Barlow Condensed',sans-serif;white-space:nowrap;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin-top:16px;font-variant-numeric:tabular-nums}
+th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-weight:500;color:var(--mut);font-size:14px}
+details{margin-top:16px}summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600}
+#done .ctl{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:26px}
+#done .top{padding:max(4px,env(safe-area-inset-top)) 0 16px;border-bottom:2px solid var(--line);margin-bottom:18px}
+#done .sub{color:var(--mut);opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="setup">
+  <header class="hero"><div class="in"><h1>Intervals</h1><p class="sub">GPS distance intervals for the track, road or park.</p></div><div class="lanes"></div></header>
+  <main class="scr">
+    <div class="presets" id="presets" aria-label="Presets"></div>
+    <form id="f" class="card" autocomplete="off">
+      <div class="row"><label class="sw"><input type="checkbox" id="warm">Warm-up</label><div class="num"><input id="warmM" type="number" inputmode="numeric" min="0" step="100" aria-label="Warm-up distance"><span>m</span></div></div>
+      <div class="row"><span class="lab">Reps</span><div class="step"><button type="button" data-st="-1" aria-label="Fewer reps">−</button><input id="reps" type="number" inputmode="numeric" min="1" max="50" aria-label="Reps"><button type="button" data-st="1" aria-label="More reps">+</button></div></div>
+      <div class="row"><span class="lab">Rep distance</span><div class="num"><input id="work" type="number" inputmode="numeric" min="50" step="50" aria-label="Rep distance"><span>m</span></div></div>
+      <div class="chips" id="workChips"></div>
+      <div class="row"><span class="lab">Recovery by</span><div class="seg"><button type="button" data-rt="dist">Distance</button><button type="button" data-rt="time">Time</button></div></div>
+      <div class="row"><span class="lab" id="recLab">Recovery</span><div class="num"><input id="rec" type="number" inputmode="numeric" min="0" aria-label="Recovery amount"><span id="recU">m</span></div></div>
+      <div class="row"><label class="sw"><input type="checkbox" id="cool">Cool-down</label><div class="num"><input id="coolM" type="number" inputmode="numeric" min="0" step="100" aria-label="Cool-down distance"><span>m</span></div></div>
+    </form>
+    <p class="sum" id="sum"></p>
+    <div class="opts"><label class="sw"><input type="checkbox" id="oVoice">Voice cues</label><label class="sw"><input type="checkbox" id="oVib">Vibrate</label></div>
+    <button class="go" id="bStart">Start</button>
+    <button class="link" id="bDemo">Try a demo run (simulated GPS, 8× speed)</button>
+    <section id="hist"></section>
+    <p class="note">Keep the screen on and this page open while you run: phones stop GPS for web pages when the screen locks or you switch apps. The app asks the phone to keep the screen awake.</p>
+  </main>
+</div>
+
+<main id="run" class="scr" hidden>
+  <div class="rtop"><span id="phLabel" class="ph"></span><span id="gps" class="gps"></span></div>
+  <div class="bigwrap"><div id="big" class="big"></div><div id="bigU" class="bigu"></div></div>
+  <div class="lane"><i id="bar"></i></div>
+  <p id="next" class="next"></p>
+  <div class="stats">
+    <div><b id="sTime">0:00</b><span>Segment time</span></div>
+    <div><b id="sPace">--:--</b><span>Pace /km</span></div>
+    <div><b id="sTotal">0.00</b><span>Total km</span></div>
+    <div><b id="sAll">0:00</b><span>Total time</span></div>
+  </div>
+  <div class="ctl" id="ctl"></div>
+</main>
+
+<main id="done" class="scr" hidden>
+  <header class="top"><h1 id="dTitle">Workout done</h1><p class="sub" id="dSub"></p></header>
+  <div class="kpis" id="kpis"></div>
+  <h2 id="repsH">Reps</h2>
+  <div id="bars" class="bars"></div>
+  <div class="scroll"><table id="tbl"></table></div>
+  <details><summary>All segments</summary><div class="scroll"><table id="tblAll"></table></div></details>
+  <div class="ctl"><button id="bCopy" class="sec">Copy results</button><button id="bBack" class="go">Done</button></div>
+</main>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const PRESETS=[
+  {name:'6 × 400 m',warm:1,warmM:1000,reps:6,work:400,recType:'dist',rec:200,cool:1,coolM:1000},
+  {name:'5 × 1 km',warm:1,warmM:1500,reps:5,work:1000,recType:'time',rec:90,cool:1,coolM:1000},
+  {name:'10 × 200 m',warm:1,warmM:1000,reps:10,work:200,recType:'dist',rec:200,cool:1,coolM:800},
+  {name:'4 × 800 m',warm:1,warmM:1500,reps:4,work:800,recType:'time',rec:120,cool:1,coolM:1000},
+  {name:'3 × 1600 m',warm:1,warmM:1500,reps:3,work:1600,recType:'dist',rec:400,cool:1,coolM:1000}
+];
+const CHIPS=[200,300,400,600,800,1000,1600,2000];
+let plan=Object.assign({},PRESETS[0],LS.get('iv-plan',{}));
+let opts=Object.assign({voice:true,vib:true},LS.get('iv-opts',{}));
+let R=null,loop=null,watchId=null,wl=null,ac=null;
+
+const now=()=>R&&R.sim?R.simT:Date.now();
+const act=()=>R.act+(R.resumed!=null?now()-R.resumed:0);
+function fmtT(ms,up){const s=Math.max(0,up?Math.ceil(ms/1000):Math.floor(ms/1000)),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?`${h}:${pad(m)}:${pad(s%60)}`:`${m}:${pad(s%60)}`}
+function fmtP(s){if(!s||!isFinite(s)||s>1800)return '--:--';let m=Math.floor(s/60),x=Math.round(s%60);if(x===60){m++;x=0}return `${m}:${pad(x)}`}
+const dShort=m=>m>=1000&&m%100===0?`${m/1000} km`:`${Math.round(m)} m`;
+const fmtKm=m=>(m/1000).toFixed(2)+' km';
+const secTxt=s=>s>=60&&s%60===0?`${s/60} min`:`${s} s`;
+function sayT(ms){const s=Math.round(ms/1000);if(s<60)return s+' seconds';const m=Math.floor(s/60),r=s%60;return `${m} minute${m>1?'s':''}`+(r?` ${r}`:'')}
+const sayD=m=>m>=1000&&m%1000===0?`${m/1000} kilometre${m>1000?'s':''}`:m>=1000&&m%100===0?`${m/1000} k`:`${m} metres`;
+function hav(a,b){const E=6371000,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lon-a.lon)*r,x=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)**2;return 2*E*Math.asin(Math.sqrt(x))}
+
+/* ---------- setup ---------- */
+function summaryText(p){return `${p.reps} × ${dShort(p.work)}, ${p.recType==='time'?secTxt(p.rec)+' rest':dShort(p.rec)+' jog'}`}
+function totalDist(p){return (p.warm?p.warmM:0)+(p.cool?p.coolM:0)+p.reps*p.work+(p.recType==='dist'?(p.reps-1)*p.rec:0)}
+function buildPhases(p){const a=[];
+  if(p.warm&&p.warmM>0)a.push({kind:'warm',label:'Warm-up',type:'dist',v:p.warmM});
+  for(let i=1;i<=p.reps;i++){a.push({kind:'work',label:`Rep ${i}`,rep:i,type:'dist',v:p.work});
+    if(i<p.reps&&p.rec>0)a.push({kind:'rec',label:'Recovery',rep:i,type:p.recType,v:p.recType==='time'?p.rec*1000:p.rec})}
+  if(p.cool&&p.coolM>0)a.push({kind:'cool',label:'Cool-down',type:'dist',v:p.coolM});
+  return a}
+const descPhase=ph=>`${ph.label} · ${ph.type==='dist'?dShort(ph.v):fmtT(ph.v)}`;
+const clampInt=(v,lo,hi)=>{const n=parseInt(v,10);return isNaN(n)?lo:Math.min(hi,Math.max(lo,n))};
+
+$('#presets').innerHTML=PRESETS.map((p,i)=>`<button type="button" data-p="${i}">${p.name}</button>`).join('');
+$('#workChips').innerHTML=CHIPS.map(m=>`<button type="button" data-w="${m}">${dShort(m)}</button>`).join('');
+
+function writeForm(){
+  $('#warm').checked=!!plan.warm;$('#warmM').value=plan.warmM;$('#reps').value=plan.reps;$('#work').value=plan.work;
+  $('#rec').value=plan.rec;$('#cool').checked=!!plan.cool;$('#coolM').value=plan.coolM;
+  $('#oVoice').checked=opts.voice;$('#oVib').checked=opts.vib;updUI()}
+function updUI(){
+  document.querySelectorAll('[data-rt]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.rt===plan.recType));
+  document.querySelectorAll('[data-w]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.w===plan.work));
+  document.querySelectorAll('[data-p]').forEach(b=>{const p=PRESETS[b.dataset.p];b.setAttribute('aria-pressed',['warm','warmM','reps','work','recType','rec','cool','coolM'].every(k=>p[k]==plan[k]))});
+  $('#recLab').textContent=plan.recType==='time'?'Recovery time':'Recovery distance';$('#recU').textContent=plan.recType==='time'?'sec':'m';
+  $('#warmM').disabled=!plan.warm;$('#coolM').disabled=!plan.cool;
+  const extra=plan.recType==='time'&&plan.reps>1&&plan.rec?` plus ${plan.reps-1} × ${secTxt(plan.rec)} rests`:'';
+  $('#sum').textContent=`${summaryText(plan)} · about ${fmtKm(totalDist(plan))} total${extra}`;
+  LS.set('iv-plan',plan);LS.set('iv-opts',opts)}
+function readForm(){
+  plan.warm=$('#warm').checked?1:0;plan.warmM=clampInt($('#warmM').value,0,20000);plan.reps=clampInt($('#reps').value,1,50);
+  plan.work=clampInt($('#work').value,50,42195);plan.rec=clampInt($('#rec').value,0,plan.recType==='time'?1800:10000);
+  plan.cool=$('#cool').checked?1:0;plan.coolM=clampInt($('#coolM').value,0,20000);
+  opts.voice=$('#oVoice').checked;opts.vib=$('#oVib').checked;updUI()}
+$('#setup').addEventListener('input',readForm);
+$('#setup').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.p){plan=Object.assign({},PRESETS[b.dataset.p]);writeForm()}
+  else if(b.dataset.w){plan.work=+b.dataset.w;$('#work').value=plan.work;updUI()}
+  else if(b.dataset.st){plan.reps=clampInt(plan.reps+ +b.dataset.st,1,50);$('#reps').value=plan.reps;updUI()}
+  else if(b.dataset.rt&&b.dataset.rt!==plan.recType){plan.recType=b.dataset.rt;plan.rec=plan.recType==='time'?90:200;$('#rec').value=plan.rec;updUI()}
+  else if(b.dataset.h!=null){const h=LS.get('iv-hist',[]);if(h[b.dataset.h])showDone(h[b.dataset.h])}
+  else if(b.id==='bClear'){if(b.dataset.arm){LS.set('iv-hist',[]);renderHist()}else{b.dataset.arm=1;b.textContent='Tap again to clear history'}}
+});
+
+function renderHist(){const h=LS.get('iv-hist',[]),el=$('#hist');
+  if(!h.length){el.innerHTML='';return}
+  el.innerHTML='<h2>Recent workouts</h2><ul class="hl">'+h.slice(0,10).map((r,i)=>`<li><button type="button" data-h="${i}"><span>${esc(r.name)}${r.sim?' (demo)':''}</span><small>${esc(new Date(r.d).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}))} · ${fmtKm(r.total)} · ${fmtT(r.time)}</small></button></li>`).join('')+'</ul><button type="button" class="link" id="bClear">Clear history</button>'}
+
+function show(id){['setup','run','done'].forEach(x=>$('#'+x).hidden=x!==id);window.scrollTo(0,0)}
+
+/* ---------- feedback ---------- */
+function unlock(){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(e){}
+  try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}}
+function beep(f=880,d=.15){if(!ac)return;try{const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;o.frequency.value=f;o.connect(g);g.connect(ac.destination);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.5,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.start(t);o.stop(t+d+.03)}catch(e){}}
+function say(s){if(!opts.voice)return;try{const u=new SpeechSynthesisUtterance(s);u.lang='en-AU';u.rate=1.05;speechSynthesis.speak(u)}catch(e){}}
+function buzz(p){if(opts.vib&&navigator.vibrate)try{navigator.vibrate(p)}catch(e){}}
+async function lockOn(){try{if(navigator.wakeLock)wl=await navigator.wakeLock.request('screen')}catch(e){}}
+function lockOff(){try{wl&&wl.release()}catch(e){}wl=null}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&R&&R.state!=='done')lockOn()});
+window.addEventListener('beforeunload',e=>{if(R&&(R.state==='run'||R.state==='pause')){e.preventDefault();e.returnValue=''}});
+
+/* ---------- run engine ---------- */
+function newRun(sim){R={plan:Object.assign({},plan),phases:buildPhases(plan),i:-1,state:'gps',acc:null,last:null,total:0,pd:0,pStart:0,act:0,resumed:null,buf:[],splits:[],cued:{},sim,simT:Date.now(),ctlKey:'',err:''}}
+function startGPS(){
+  if(!window.isSecureContext){R.err='GPS only works when this page is opened from an https:// address.';return}
+  if(!navigator.geolocation){R.err='This browser has no access to location.';return}
+  watchId=navigator.geolocation.watchPosition(onFix,e=>{if(!R)return;R.err=e.code===1?'Location permission was refused. Allow location for this site in your browser settings, then try again.':e.code===3?'':'GPS is unavailable right now.';renderRun()},{enableHighAccuracy:true,maximumAge:0,timeout:30000})}
+function stopGPS(){if(watchId!=null)navigator.geolocation.clearWatch(watchId);watchId=null}
+function onFix(pos){if(!R||R.sim||R.state==='done')return;const c=pos.coords;R.acc=c.accuracy;R.err='';
+  if(R.state!=='run'){R.last=null;return}
+  if(c.accuracy>35)return;
+  const p={lat:c.latitude,lon:c.longitude,t:act()};
+  if(!R.last){R.last=p;return}
+  const d=hav(R.last,p),dt=(p.t-R.last.t)/1000;
+  if(d<Math.max(2,c.accuracy*.25))return;           // jitter while standing
+  const t0=R.last.t;R.last=p;
+  if(dt<=0||d/dt>12)return;                           // implausible jump: re-anchor, add nothing
+  addDist(d,t0,p.t)}
+function addDist(d,t0,t1){
+  while(d>0&&R.state==='run'){const ph=R.phases[R.i];
+    if(ph.type!=='dist'){R.pd+=d;R.total+=d;break}
+    const need=ph.v-R.pd;
+    if(d<need){R.pd+=d;R.total+=d;break}
+    const tc=t0+(t1-t0)*(need/d);R.pd+=need;R.total+=need;d-=need;t0=tc;endPhase(tc)}
+  R.buf.push([t1,R.total]);while(R.buf.length>2&&t1-R.buf[0][0]>20000)R.buf.shift();
+  distCues()}
+function curPace(){const b=R.buf;if(b.length<2)return null;const L=b[b.length-1];if(act()-L[0]>8000)return null;
+  let f=b[0];for(const x of b){if(x[0]>=L[0]-15000){f=x;break}}const dt=L[0]-f[0],dd=L[1]-f[1];return dd<5||dt<3000?null:dt/dd}
+function distCues(){if(R.state!=='run')return;const ph=R.phases[R.i];if(ph.kind!=='work')return;
+  if(ph.v>=800&&!R.cued.h&&R.pd>=ph.v/2){R.cued.h=1;say('Halfway. '+sayT(act()-R.pStart))}
+  if(ph.v>=300&&!R.cued.c&&ph.v-R.pd<=100){R.cued.c=1;say('100 to go');buzz(120)}}
+function endPhase(t){const ph=R.phases[R.i],time=t-R.pStart;
+  R.splits.push({kind:ph.kind,label:ph.label,rep:ph.rep,dist:R.pd,time});
+  if(ph.kind==='work')say(`${ph.label} done in ${sayT(time)}.`);
+  startPhase(R.i+1,t)}
+function startPhase(i,t){R.i=i;R.pStart=t;R.pd=0;R.cued={};
+  if(i>=R.phases.length){finish();return}
+  const ph=R.phases[i],n=R.plan.reps;
+  if(ph.kind==='work'){buzz([300,120,300]);beep(988,.25);say((ph.rep===n&&n>1?'Last rep! ':`Rep ${ph.rep} of ${n}. `)+sayD(ph.v)+'. Go!')}
+  else{buzz(250);beep(523,.25);say(ph.kind==='rec'?'Recover. '+(ph.type==='time'?sayT(ph.v):sayD(ph.v)):ph.kind==='warm'?'Warm up. '+sayD(ph.v):'Cool down. '+sayD(ph.v))}}
+function simStep(){const ph=R.phases[R.i],ms=200*8,t0=act();R.simT+=ms;
+  const v=(ph.kind==='work'?4.7:2.9)*(.9+Math.random()*.2);addDist(v*ms/1000,t0,act())}
+function tick(){if(!R||R.state==='done')return;
+  if(R.sim&&R.state==='run')simStep();
+  if(R.state==='run'){const ph=R.phases[R.i];
+    if(ph.type==='time'){const rem=ph.v-(act()-R.pStart);
+      if(ph.v>15000&&rem<=10000&&!R.cued.t){R.cued.t=1;say('10 seconds')}
+      for(const s of [3,2,1])if(rem<=s*1000&&!R.cued['b'+s]){R.cued['b'+s]=1;beep(660,.12)}
+      if(rem<=0)endPhase(R.pStart+ph.v)}}
+  if(R.state!=='done')renderRun()}
+function countdown(){R.state='count';R.count=3;beep(660,.12);renderRun();
+  const iv=setInterval(()=>{if(!R||R.state!=='count'){clearInterval(iv);return}
+    R.count--;if(R.count>0){beep(660,.12);renderRun();return}
+    clearInterval(iv);R.state='run';R.act=0;R.resumed=now();R.last=null;startPhase(0,0);renderRun()},1000)}
+function finish(){if(!R||R.state==='done')return;const t=act();
+  if(R.i>=0&&R.i<R.phases.length&&R.pd>10){const ph=R.phases[R.i];R.splits.push({kind:ph.kind,label:ph.label+' (part)',rep:ph.rep,dist:R.pd,time:t-R.pStart,partial:1})}
+  R.state='done';clearInterval(loop);stopGPS();lockOff();say('Workout complete.');buzz([200,100,200,100,400]);
+  const rec={d:Date.now(),name:summaryText(R.plan),total:R.total,time:t,splits:R.splits,sim:R.sim};
+  if(R.splits.length){const h=LS.get('iv-hist',[]);h.unshift(rec);LS.set('iv-hist',h.slice(0,30))}
+  renderHist();showDone(rec)}
+function quit(){clearInterval(loop);stopGPS();lockOff();try{speechSynthesis.cancel()}catch(e){}R=null;show('setup')}
+
+/* ---------- run screen ---------- */
+function setCtl(s){const ready=s==='gps'&&R.acc!=null&&R.acc<=25,key=s+(R.endArm?'a':'')+(ready?'r':'');if(R.ctlKey===key)return;R.ctlKey=key;
+  const B=(a,t,c,dis)=>`<button type="button" data-act="${a}" class="${c}"${dis?' disabled':''}>${t}</button>`;
+  $('#ctl').innerHTML=s==='gps'?B('go',ready?'Start workout':'Waiting for GPS…','go',!ready)+B('go','Start anyway','sec')+B('cancel','Cancel','sec')
+    :s==='count'?B('cancel','Cancel','sec')
+    :B(s==='pause'?'resume':'pause',s==='pause'?'Resume':'Pause','go')+B('skip','Skip','sec')+B('end',R.endArm?'Tap to end':'End','sec'+(R.endArm?' warn':''))}
+function renderRun(){if(!R)return;const s=R.state,run=$('#run'),ph=R.phases[Math.max(0,R.i)];
+  run.dataset.k=s==='gps'||s==='count'?'idle':ph.kind;run.classList.toggle('paused',s==='pause');
+  const g=$('#gps');g.textContent=R.sim?'Demo':R.acc==null?'GPS …':`GPS ±${Math.round(R.acc)} m`;
+  g.dataset.q=R.sim||(R.acc!=null&&R.acc<=15)?'ok':R.acc!=null&&R.acc<=30?'mid':'bad';
+  if(s==='gps'){$('#phLabel').textContent='Finding GPS';$('#big').textContent=R.acc==null?'…':'±'+Math.round(R.acc);
+    $('#bigU').textContent=R.err||(R.acc==null?'Searching for satellites. Stand outside with a clear view of the sky.':'metres accuracy. Ready below 25 m.');
+    $('#bar').style.width='0';$('#next').textContent='First: '+descPhase(R.phases[0]);setCtl(s);return}
+  if(s==='count'){$('#phLabel').textContent='Get ready';$('#big').textContent=R.count;$('#bigU').textContent=descPhase(R.phases[0]);$('#bar').style.width='0';setCtl(s);return}
+  const el=act()-R.pStart;
+  $('#phLabel').textContent=(s==='pause'?'Paused · ':'')+ph.label+(ph.kind==='work'?` of ${R.plan.reps}`:'');
+  if(ph.type==='dist'){const rem=Math.max(0,ph.v-R.pd);$('#big').textContent=rem>=1000?(rem/1000).toFixed(2):Math.ceil(rem);$('#bigU').textContent=rem>=1000?'km to go':'metres to go';$('#bar').style.width=Math.min(100,R.pd/ph.v*100)+'%'}
+  else{$('#big').textContent=fmtT(ph.v-el,true);$('#bigU').textContent=`recovery left · ${Math.round(R.pd)} m covered`;$('#bar').style.width=Math.min(100,el/ph.v*100)+'%'}
+  const nx=R.phases[R.i+1];$('#next').textContent=nx?'Next: '+descPhase(nx):'Last segment';
+  $('#sTime').textContent=fmtT(el);$('#sPace').textContent=fmtP(curPace());$('#sTotal').textContent=(R.total/1000).toFixed(2);$('#sAll').textContent=fmtT(act());
+  setCtl(s)}
+$('#ctl').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!R||b.disabled)return;const a=b.dataset.act;
+  if(a==='go')countdown();
+  else if(a==='cancel')quit();
+  else if(a==='pause'){R.act=act();R.resumed=null;R.state='pause';R.last=null;say('Paused')}
+  else if(a==='resume'){R.resumed=now();R.state='run';R.last=null;say('Resumed')}
+  else if(a==='skip'){if(R.state==='run'||R.state==='pause')endPhase(act())}
+  else if(a==='end'){if(R.endArm){finish();return}R.endArm=1;setTimeout(()=>{if(R)R.endArm=0},3000)}
+  if(R&&R.state!=='done')renderRun()});
+function begin(sim){unlock();readForm();newRun(sim);show('run');lockOn();loop=setInterval(tick,200);
+  if(sim)countdown();else{startGPS();renderRun()}}
+$('#bStart').addEventListener('click',()=>begin(false));
+$('#bDemo').addEventListener('click',()=>begin(true));
+
+/* ---------- results ---------- */
+let copyText='';
+function showDone(r){show('done');
+  $('#dTitle').textContent=r.sim?'Demo run done':'Workout done';
+  $('#dSub').textContent=`${new Date(r.d).toLocaleString('en-AU',{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · ${r.name}`;
+  const reps=r.splits.filter(s=>s.kind==='work'&&!s.partial&&s.dist>0);
+  const tD=reps.reduce((a,s)=>a+s.dist,0),tT=reps.reduce((a,s)=>a+s.time,0),avg=tD?tT/tD:null;
+  const paces=reps.map(s=>s.time/s.dist),best=paces.length?Math.min(...paces):null,bi=paces.indexOf(best);
+  $('#kpis').innerHTML=[[fmtKm(r.total),'Distance'],[fmtT(r.time),'Total time'],[fmtP(avg),'Avg rep pace /km'],[best?fmtP(best):'--:--',best?`Fastest · Rep ${reps[bi].rep}`:'Fastest rep']].map(k=>`<div><b>${k[0]}</b><span>${k[1]}</span></div>`).join('');
+  $('#repsH').hidden=!reps.length;
+  $('#bars').innerHTML=reps.map((s,i)=>`<div class="br"><span>Rep ${s.rep}</span><div class="t"><i class="${i===bi?'best':''}" style="width:${(best/paces[i]*100).toFixed(1)}%"></i></div><b>${fmtT(s.time)} · ${fmtP(paces[i])}</b></div>`).join('');
+  $('#tbl').innerHTML=reps.length?'<tr><th>Rep</th><th>Distance</th><th>Time</th><th>Pace</th><th>vs avg</th></tr>'+reps.map((s,i)=>{const df=Math.round(paces[i]-avg);return `<tr><td>${s.rep}</td><td>${Math.round(s.dist)} m</td><td>${fmtT(s.time)}</td><td>${fmtP(paces[i])}</td><td>${df===0?'±0 s':(df>0?'+':'−')+Math.abs(df)+' s'}</td></tr>`}).join(''):'';
+  $('#tblAll').innerHTML='<tr><th>Segment</th><th>Distance</th><th>Time</th><th>Pace</th></tr>'+r.splits.map(s=>`<tr><td>${esc(s.label)}</td><td>${Math.round(s.dist)} m</td><td>${fmtT(s.time)}</td><td>${s.dist>5?fmtP(s.time/s.dist):'--:--'}</td></tr>`).join('');
+  copyText=[`${r.name}${r.sim?' (demo)':''} · ${new Date(r.d).toLocaleDateString('en-AU')}`,`Total ${fmtKm(r.total)} in ${fmtT(r.time)} · avg rep pace ${fmtP(avg)}/km`,...reps.map((s,i)=>`Rep ${s.rep}: ${fmtT(s.time)} (${fmtP(paces[i])}/km)`)].join('\n');
+  $('#bCopy').textContent='Copy results'}
+$('#bCopy').addEventListener('click',async()=>{const b=$('#bCopy');
+  try{await navigator.clipboard.writeText(copyText);b.textContent='Copied'}
+  catch(e){const t=document.createElement('textarea');t.value=copyText;document.body.appendChild(t);t.select();try{document.execCommand('copy');b.textContent='Copied'}catch(x){b.textContent='Copy failed'}t.remove()}});
+$('#bBack').addEventListener('click',()=>{R=null;show('setup');renderHist()});
+
+writeForm();renderHist();
+}
+</script>
+</body>
+</html>
