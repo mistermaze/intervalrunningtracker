@@ -169,6 +169,16 @@ svg{flex:none}
 .sw::after{content:'';position:absolute;top:3px;left:3px;width:25px;height:25px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s}
 .sw:checked{background:var(--acc)}.sw:checked::after{transform:translateX(20px)}
 .note{color:var(--mut);font-size:14px;margin:12px 4px 0}
+.cue{padding:16px;display:grid;gap:10px;margin-bottom:12px}
+.set.cue>*+*{border-top:0}
+.cue h3{margin:0;font-size:18px;font-weight:700}
+.cue>p{margin:-6px 0 2px;color:var(--mut);font-size:14px}
+.cl{font-size:13px;font-weight:700;color:var(--mut);margin-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--sf);font-weight:600;font-size:15px}
+.chips button[aria-pressed=true]{background:#000;color:#fff;border-color:#000}
+.chips.off{opacity:.4}
+.prev{justify-self:start;min-height:44px;border:0;background:none;color:var(--acc);font-weight:700;font-size:16px;padding:0;display:flex;gap:8px;align-items:center}
 /* result */
 .rmeta{color:var(--mut);margin:0}
 #rmap{height:240px;border-radius:18px;overflow:hidden;margin:24px 0 0;background:var(--bg2)}
@@ -269,9 +279,16 @@ details[open] summary::after{content:'−'}
 <section id="s-settings" hidden>
   <header class="tb"><button type="button" class="ib" data-menu aria-label="Open menu"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><h1>Settings</h1><span></span></header>
   <main class="page">
+    <h2 class="st">Voice cues</h2>
+    <div class="set cue" id="cueRep"></div>
+    <div class="set cue" id="cueRun"></div>
+    <div class="set">
+      <label for="oToGo"><span>“100 to go”<small>Near the end of each hard rep</small></span><input type="checkbox" class="sw" id="oToGo"></label>
+      <label for="oRepEnd"><span>Rep summary<small>Rep time and how far off target, as each rep ends</small></span><input type="checkbox" class="sw" id="oRepEnd"></label>
+    </div>
     <h2 class="st">During a run</h2>
     <div class="set">
-      <label for="oVoice"><span>Voice cues<small>Rep starts, pace checks, splits</small></span><input type="checkbox" class="sw" id="oVoice"></label>
+      <label for="oVoice"><span>Voice<small>Turns every spoken cue on or off</small></span><input type="checkbox" class="sw" id="oVoice"></label>
       <label for="oVib"><span>Vibrate<small>Android only</small></span><input type="checkbox" class="sw" id="oVib"></label>
       <label for="oMap"><span>Maps<small>Home map and route maps (uses mobile data)</small></span><input type="checkbox" class="sw" id="oMap"></label>
     </div>
@@ -361,7 +378,8 @@ const newWorkout=()=>({name:'',blocks:[B('Warm-up',1,1000,0,'','none',0),B('Reps
 let saved=LS.get('iv-wos',[]);
 if(!LS.get('iv-seeded',0)){if(!saved.some(w=>w.name===MINE0.name))saved.unshift(clone(MINE0));LS.set('iv-wos',saved);LS.set('iv-seeded',1)}
 let ed=LS.get('iv-ed',null)||{wo:newWorkout(),idx:null,open:1};
-let opts=Object.assign({voice:true,vib:true,map:true},LS.get('iv-opts',{}));
+const CUE_DEF={rep:'200',run:'1000',repF:['target','pace'],runF:['dist','time','split'],toGo:true,repEnd:true};
+let opts=Object.assign({voice:true,vib:true,map:true},LS.get('iv-opts',{}));opts.cue=Object.assign({},CUE_DEF,opts.cue||{});
 let selKey=LS.get('iv-sel','s0');
 let R=null,loop=null,watchId=null,wl=null,ac=null,resIdx=null,resRec=null;
 
@@ -375,7 +393,19 @@ const secTxt=s=>s>=60&&s%60===0?`${s/60} min`:`${s} s`;
 const sDiff=(d,t)=>d===0?(t?'on target':'±0 s'):(d>0?'+':'−')+Math.abs(d)+' s';
 function sayT(ms){const s=Math.round(ms/1000);if(s<60)return s+' seconds';const m=Math.floor(s/60),r=s%60;return `${m} minute${m>1?'s':''}`+(r?` ${r}`:'')}
 const sayD=m=>m>=1000&&m%1000===0?`${m/1000} kilometre${m>1000?'s':''}`:m>=1000&&m%100===0?`${m/1000} k`:`${m} metres`;
-const sayPace=s=>`${Math.floor(s/60)} ${pad(Math.round(s)%60)}`;
+const sayPace=s=>{const r=Math.round(s);return `${Math.floor(r/60)} ${pad(r%60)}`};
+const sayDist=m=>{if(m<1000)return `${Math.round(m/10)*10} metres`;const k=+(m/1000).toFixed(2);return `${k} kilometre${k===1?'':'s'}`};
+/* what a check-in says, built from the parts chosen in Settings */
+function cueText(F,c){const p=[],h=k=>F.includes(k);
+  if(h('target')&&c.tp&&c.delta!=null){const d=Math.round(c.delta);p.push(Math.abs(d)<=1?'On pace':`${Math.abs(d)} seconds ${d<0?'ahead':'behind'}`)}
+  if(h('dist'))p.push(sayDist(c.pd));
+  if(h('left')&&c.v)p.push(`${sayDist(c.v-c.pd)} to go`);
+  if(h('time'))p.push(`Time ${sayT(c.el)}`);
+  if(h('split')&&c.split)p.push(`Split pace ${sayPace(c.split)}`);
+  if(h('pace')&&c.cur)p.push(`Pace ${sayPace(c.cur)}`);
+  if(h('avg')&&c.pd>50)p.push(`Average pace ${sayPace(c.el/c.pd)}`);
+  if(h('total'))p.push(`Total time ${sayT(c.total)}`);
+  return p.join('. ')}
 function parsePace(s){const m=/^\s*(\d{1,2})[:.'](\d{2})"?\s*$/.exec(s||'');return m&&+m[2]<60?+m[1]*60+ +m[2]:null}
 function hav(a,b){const E=6371000,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lon-a.lon)*r,x=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)**2;return 2*E*Math.asin(Math.sqrt(x))}
 const clampInt=(v,lo,hi)=>{const n=parseInt(v,10);return isNaN(n)?lo:Math.min(hi,Math.max(lo,n))};
@@ -432,14 +462,15 @@ window.addEventListener('popstate',()=>{
 /* ---------- maps ---------- */
 const hasMap=()=>opts.map&&window.L;
 function tiles(m){
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>'}).addTo(m)}
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(m)}   // OpenStreetMap's own tiles: no key or account needed
 let map=null,meMk=null,homeWatch=null,homeFix=null,homeErr=null,rmap=null;
 function homeOn(){
   $('#map').classList.toggle('nomap',!hasMap());
   if(hasMap()&&!map){map=L.map('map',{zoomControl:false}).setView([-34.9285,138.6007],14);tiles(map);map.attributionControl.setPrefix(false)}
   if(map)setTimeout(()=>map.invalidateSize(),60);
+  requestAnimationFrame(()=>{scrollToSel(false);updSel()});
   if(homeWatch==null&&navigator.geolocation&&window.isSecureContext)homeWatch=navigator.geolocation.watchPosition(p=>{homeFix=p.coords;homeErr=null;updGps();
-      if(map){const ll=[p.coords.latitude,p.coords.longitude];if(!meMk){meMk=L.circleMarker(ll,{radius:9,color:'#fff',weight:3,fillColor:'#ff4d2e',fillOpacity:1}).addTo(map);map.setView(ll,16)}else meMk.setLatLng(ll)}},
+      if(map){const ll=[p.coords.latitude,p.coords.longitude];if(!meMk){meMk=L.circleMarker(ll,{radius:10,color:'#fff',weight:3,fillColor:'#ff4d2e',fillOpacity:1}).addTo(map);map.setView(ll,16)}else meMk.setLatLng(ll)}},
     e=>{homeErr=e.code;updGps()},{enableHighAccuracy:true,maximumAge:5000,timeout:30000});
   updGps()}
 function homeOff(){if(homeWatch!=null){navigator.geolocation.clearWatch(homeWatch);homeWatch=null}}
@@ -454,10 +485,10 @@ const getSrc=src=>src==='f'?FREE:src[0]==='s'?saved[+src.slice(1)]:TEMPLATES[+sr
 function renderHome(){const it=carItems();if(!it.some(x=>x.src===selKey))selKey=saved.length?'s0':'f';
   $('#car').innerHTML=it.map(x=>`<button type="button" class="cc" data-src="${x.src}"><span class="prof">${profileSVG(x.w)}</span><span class="ctx"><small>${esc(x.tag)}</small><h3>${esc(wName(x.w))}</h3><p>${esc(workoutLine(x.w))}</p></span></button>`).join('');
   $('#dots').innerHTML=it.map(()=>'<i></i>').join('');
-  requestAnimationFrame(()=>{scrollToSel(false);updSel()})}
+  if(!$('#s-home').hidden)requestAnimationFrame(()=>{scrollToSel(false);updSel()})}
 function cardStep(){const c=$('#car').firstElementChild;return c?c.offsetWidth+12:1}
 function scrollToSel(smooth){const i=carItems().findIndex(x=>x.src===selKey);$('#car').scrollTo({left:Math.max(0,i)*cardStep(),behavior:smooth?'smooth':'auto'})}
-function updSel(){const it=carItems(),i=Math.min(it.length-1,Math.max(0,Math.round($('#car').scrollLeft/cardStep())));selKey=it[i].src;LS.set('iv-sel',selKey);
+function updSel(){if($('#s-home').hidden)return;const it=carItems(),i=Math.min(it.length-1,Math.max(0,Math.round($('#car').scrollLeft/cardStep())));selKey=it[i].src;LS.set('iv-sel',selKey);
   $$('#dots i').forEach((d,j)=>d.classList.toggle('on',j===i));$('#bEditSel').disabled=selKey==='f'}
 let selT=null;$('#car').addEventListener('scroll',()=>{clearTimeout(selT);selT=setTimeout(updSel,60)},{passive:true});
 $('#car').addEventListener('click',e=>{const c=e.target.closest('.cc');if(c&&c.dataset.src!==selKey){selKey=c.dataset.src;scrollToSel(true)}});
@@ -589,8 +620,27 @@ $('#bDelRun').addEventListener('click',e=>{const b=e.currentTarget;if(!b.dataset
   const h=hist();if(resIdx!=null)h.splice(resIdx,1);LS.set('iv-hist',h);history.back();toast('Run deleted')});
 
 /* ---------- settings ---------- */
-function renderSettings(){$('#oVoice').checked=opts.voice;$('#oVib').checked=opts.vib;$('#oMap').checked=opts.map}
-$('#s-settings').addEventListener('change',e=>{if(!e.target.classList.contains('sw'))return;opts.voice=$('#oVoice').checked;opts.vib=$('#oVib').checked;opts.map=$('#oMap').checked;LS.set('iv-opts',opts);
+const CUES={
+  rep:{el:'#cueRep',title:'During hard reps',sub:'Check-ins while you run each rep',fk:'repF',
+    when:[['off','Off'],['100','Every 100 m'],['200','Every 200 m'],['400','Every 400 m'],['half','Halfway']],
+    fields:[['target','On pace / ahead / behind'],['dist','Distance done'],['left','Distance left'],['time','Rep time'],['pace','Current pace'],['avg','Average pace'],['total','Total time']],
+    sample:{tp:290,delta:-2,pd:400,v:600,el:114000,split:286,cur:287,total:870000}},
+  run:{el:'#cueRun',title:'Free runs, warm-ups and cool-downs',sub:'Updates while you run easy',fk:'runF',
+    when:[['off','Off'],['500','Every 500 m'],['1000','Every 1 km'],['2000','Every 2 km'],['5min','Every 5 min'],['10min','Every 10 min']],
+    fields:[['dist','Distance'],['time','Time'],['split','Split pace'],['pace','Current pace'],['avg','Average pace'],['total','Total time']],
+    sample:{tp:null,delta:null,pd:3000,v:0,el:1068000,split:352,cur:348,total:1068000}}};
+function renderCue(k){const C=CUES[k],o=opts.cue,on=o[k]!=='off';
+  $(C.el).innerHTML=`<h3>${C.title}</h3><p>${C.sub}</p>
+    <div class="cl">When</div><div class="chips">${C.when.map(w=>`<button type="button" data-cw="${k}" data-v="${w[0]}" aria-pressed="${o[k]===w[0]}">${w[1]}</button>`).join('')}</div>
+    <div class="cl">What it says</div><div class="chips${on?'':' off'}">${C.fields.map(f=>`<button type="button" data-cf="${k}" data-v="${f[0]}" aria-pressed="${o[C.fk].includes(f[0])}">${f[1]}</button>`).join('')}</div>
+    <button type="button" class="prev" data-prev="${k}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>Hear an example</button>`}
+function renderSettings(){$('#oVoice').checked=opts.voice;$('#oVib').checked=opts.vib;$('#oMap').checked=opts.map;$('#oToGo').checked=opts.cue.toGo;$('#oRepEnd').checked=opts.cue.repEnd;renderCue('rep');renderCue('run')}
+$('#s-settings').addEventListener('click',e=>{const b=e.target.closest('[data-cw],[data-cf],[data-prev]');if(!b)return;const o=opts.cue;
+  if(b.dataset.cw){o[b.dataset.cw]=b.dataset.v}
+  else if(b.dataset.cf){const C=CUES[b.dataset.cf],a=o[C.fk],v=b.dataset.v;o[C.fk]=a.includes(v)?a.filter(x=>x!==v):C.fields.map(f=>f[0]).filter(f=>f===v||a.includes(f))}
+  else{const k=b.dataset.prev,t=o[k]==='off'?'This check-in is off.':cueText(o[CUES[k].fk],CUES[k].sample)||'Nothing selected.';unlock();try{speechSynthesis.cancel()}catch(x){}setTimeout(()=>speak(t),60);return}
+  LS.set('iv-opts',opts);renderCue(b.dataset.cw||b.dataset.cf)});
+$('#s-settings').addEventListener('change',e=>{if(!e.target.classList.contains('sw'))return;opts.voice=$('#oVoice').checked;opts.vib=$('#oVib').checked;opts.map=$('#oMap').checked;opts.cue.toGo=$('#oToGo').checked;opts.cue.repEnd=$('#oRepEnd').checked;LS.set('iv-opts',opts);
   if(!opts.map&&map){map.remove();map=null;meMk=null}});
 $('#bExport').addEventListener('click',()=>{const h=hist();if(!h.length){toast('No runs to export yet');return}const rows=[['date','start','workout','segment','distance_m','time_s','pace_per_km','demo']];
   h.forEach(r=>{const d=new Date(r.d);r.splits.forEach(s=>rows.push([d.toLocaleDateString('en-CA'),d.toTimeString().slice(0,5),r.name,s.label,Math.round(s.dist),(s.time/1000).toFixed(1),s.dist>5?fmtP(s.time/s.dist).replace(/'/,':').replace('"',''):'',r.sim?'yes':'']))});
@@ -646,20 +696,25 @@ function addDist(d,t0,t1){
 function curPace(){const b=R.buf;if(b.length<2)return null;const L=b[b.length-1];if(act()-L[0]>8000)return null;
   let f=b[0];for(const x of b){if(x[0]>=L[0]-15000){f=x;break}}const dt=L[0]-f[0],dd=L[1]-f[1];return dd<5||dt<3000?null:dt/dd}
 const paceDelta=()=>{const ph=R.phases[R.i];return (act()-R.pStart)/1000-ph.pace*R.pd/1000};
-function distCues(){if(R.state!=='run')return;const ph=R.phases[R.i];
-  if(ph.type==='free'){const k=Math.floor(R.pd/1000);if(k>=1&&!R.cued['k'+k]){R.cued['k'+k]=1;const t=act()-R.pStart,split=t-R.kmT;R.kmT=t;say(`${k} kilometre${k>1?'s':''}. ${sayT(t)}. Last kilometre ${sayPace(split/1000)}.`,true);buzz(150)}return}
-  if(ph.kind!=='work')return;
-  if(ph.pace&&ph.v>=400){const cp=Math.floor(R.pd/200)*200;
-    if(cp>=200&&cp<ph.v&&!R.cued['p'+cp]){R.cued['p'+cp]=1;const d=Math.round(paceDelta());say(Math.abs(d)<=1?'On pace':`${Math.abs(d)} seconds ${d<0?'ahead':'behind'}`)}}
-  else if(ph.v>=800&&!R.cued.h&&R.pd>=ph.v/2){R.cued.h=1;say('Halfway. '+sayT(act()-R.pStart))}
-  if(ph.v>=300&&!R.cued.c&&ph.v-R.pd<=100){R.cued.c=1;say('100 to go');buzz(120)}}
+function liveCtx(ph){const el=act()-R.pStart,lc=R.lc||{t:0,d:0},dd=R.pd-lc.d,c={tp:ph.pace||null,delta:ph.pace&&R.pd>=50?paceDelta():null,pd:R.pd,v:ph.type==='dist'?ph.v:0,el,split:dd>50?(el-lc.t)/dd:null,cur:curPace(),total:act()};R.lc={t:el,d:R.pd};return c}
+function distCues(){if(R.state!=='run')return;const ph=R.phases[R.i],C=opts.cue;
+  if(ph.kind==='work'){
+    if(C.rep!=='off'){const iv=C.rep==='half'?ph.v/2:+C.rep,n=Math.floor(R.pd/iv);
+      if(iv<ph.v&&n>=1&&n*iv<ph.v-(C.toGo&&ph.v>=300?100:20)&&!R.cued['r'+n]){R.cued['r'+n]=1;say(cueText(C.repF,liveCtx(ph)))}}
+    if(C.toGo&&ph.v>=300&&!R.cued.c&&ph.v-R.pd<=100){R.cued.c=1;say('100 to go');buzz(120)}
+    return}
+  if(ph.kind!=='rec')runCue(ph,false)}
+function runCue(ph,fromTick){const C=opts.cue;if(C.run==='off')return;const m=/^(\d+)min$/.exec(C.run);let n,key;
+  if(m){if(!fromTick)return;n=Math.floor((act()-R.pStart)/(m[1]*60000));key='t'+n}
+  else{if(fromTick)return;const iv=+C.run;n=Math.floor(R.pd/iv);if(ph.type!=='free'&&n*iv>=ph.v-50)return;key='k'+n}
+  if(n>=1&&!R.cued[key]){R.cued[key]=1;const t=cueText(C.runF,liveCtx(ph));if(t){say(t,true);buzz(150)}}}
 function endPhase(t,skipped){const ph=R.phases[R.i],time=t-R.pStart;
   R.splits.push({kind:ph.kind,label:ph.label+(skipped?' (skipped)':''),block:ph.block,rep:ph.rep,dist:R.pd,time,pace:ph.pace||null,skipped:skipped?1:0});
   R.carry='';
-  if(ph.kind==='work'&&!skipped){let m=`${ph.n>1?ph.name+' '+ph.rep:ph.name} done in ${sayT(time)}.`;
+  if(ph.kind==='work'&&!skipped&&opts.cue.repEnd){let m=`${ph.n>1?ph.name+' '+ph.rep:ph.name} done in ${sayT(time)}.`;
     if(ph.pace&&R.pd>50){const d=Math.round(time/1000-ph.pace*R.pd/1000);m+=d===0?' Right on target.':` ${Math.abs(d)} second${Math.abs(d)>1?'s':''} ${d<0?'fast':'slow'}.`}R.carry=m}
   startPhase(R.i+1,t)}
-function startPhase(i,t){R.i=i;R.pStart=t;R.pd=0;R.cued={};
+function startPhase(i,t){R.i=i;R.pStart=t;R.pd=0;R.cued={};R.lc={t:0,d:0};
   if(i>=R.phases.length){finish();return}
   const ph=R.phases[i],pre=R.carry?R.carry+' ':'';R.carry='';
   if(ph.type==='free'){buzz([300,120,300]);beep(988,.25);say('Free run. Go!',true);return}
@@ -673,6 +728,7 @@ function simStep(){const ph=R.phases[R.i],ms=200*8,t0=act();R.simT+=ms;
 function tick(){if(!R||R.state==='done')return;
   if(R.sim&&R.state==='run')simStep();
   if(R.state==='run'){const ph=R.phases[R.i];
+    if(ph.kind==='easy')runCue(ph,true);
     if(ph.type==='time'){const rem=ph.v-(act()-R.pStart);
       if(ph.v>15000&&rem<=10000&&!R.cued.t){R.cued.t=1;say('10 seconds')}
       for(const s of [3,2,1])if(rem<=s*1000&&!R.cued['b'+s]){R.cued['b'+s]=1;beep(660,.12)}
