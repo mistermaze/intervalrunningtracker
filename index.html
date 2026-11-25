@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b0b0c">
+<meta name="theme-color" id="tc" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Intervals">
@@ -16,10 +15,10 @@
 /* VOICE: a running app: confident, sporty, big italic numbers, plenty of white
    IDEA: the home screen is the start line: your map, your workout, one big round Start
    PICTURE: full-bleed map with floating workout cards; activity chart of km per day
-   COLOUR+TYPE: white / near-black, one hot coral accent, recovery blue; phone system font, 900 italic numerals
+   COLOUR+TYPE: light only for direct sun: white, pure black text, one hot coral accent; system font, 900 italic numerals
    LAYOUT: top bar with menu drawer, one column, thumb controls at the bottom */
-:root{color-scheme:light dark;--bg:light-dark(#fff,#0b0b0c);--bg2:light-dark(#f4f4f5,#141416);--sf:light-dark(#fff,#1b1b1e);--sf2:light-dark(#efeff1,#26262a);--ink:light-dark(#111113,#f4f4f5);--mut:light-dark(#77777d,#9c9ca3);--line:light-dark(#e7e7ea,#2b2b30);--acc:#ff4d2e;--rec:#2f6bff;--easy:#2b2e35;--bad:#e5484d;--tb:60px;--sh:0 6px 24px rgba(0,0,0,.13)}
-:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+:root{color-scheme:light;--bg:#fff;--bg2:#f1f1f3;--sf:#fff;--sf2:#e9e9ec;--ink:#000;--mut:#4a4a51;--line:#d2d2d8;--acc:#ff4d2e;--rec:#2f6bff;--easy:#2b2e35;--bad:#e5484d;--tb:60px;--sh:0 6px 24px rgba(0,0,0,.13)}
+:root[data-theme]{color-scheme:light}
 *{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
@@ -196,35 +195,35 @@ summary::after{content:'+';margin-left:auto;color:var(--mut);font-size:22px;font
 details[open] summary::after{content:'−'}
 .ract{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 110px);transform:translateX(-50%);z-index:50;background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:999px;font-weight:600;font-size:15px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.2)}
-/* live workout */
-.full{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;gap:14px;padding:calc(env(safe-area-inset-top) + 14px) max(16px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 16px) max(16px,env(safe-area-inset-left));color:#fff;background:#1c1d21;transition:background .35s;overflow:hidden;overscroll-behavior:none}
-.full[data-k=work]{background:var(--acc)}.full[data-k=rec]{background:var(--rec)}.full[data-k=easy]{background:var(--easy)}.full.paused{background:#55565c}
+/* live workout: white page and black numbers for direct sun; the phase is a full-width colour band */
+.full{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;gap:14px;padding:0 max(16px,env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 16px) max(16px,env(safe-area-inset-left));color:#000;background:#fff;overflow:hidden;overscroll-behavior:none;--band:#e4e4e8}
+.full[data-k=work]{--band:var(--acc)}.full[data-k=rec]{--band:#7fb0ff}.full[data-k=easy]{--band:#cfd2d8}.full.paused{--band:#bdbdc2}
 .full>*{width:100%;max-width:640px;margin-inline:auto}
-.rtop{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.ph{font-size:22px;font-weight:700}
-.gps{font-size:13px;font-weight:600;padding:6px 11px;border-radius:999px;background:rgba(0,0,0,.22);white-space:nowrap}
-.gps::before{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#f4c430;vertical-align:1px}
-.gps[data-q=ok]::before{background:#6ee787}.gps[data-q=bad]::before{background:#ff6b5b}
+.full>.rtop{width:auto;max-width:none;margin:0 calc(-1 * max(16px,env(safe-area-inset-right))) 0 calc(-1 * max(16px,env(safe-area-inset-left)));padding:calc(env(safe-area-inset-top) + 18px) max(16px,env(safe-area-inset-right)) 20px max(16px,env(safe-area-inset-left));background:var(--band);transition:background .3s;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.ph{font-size:28px;font-weight:800;letter-spacing:-.01em}
+.gps{font-size:13px;font-weight:700;padding:6px 11px;border-radius:999px;background:rgba(255,255,255,.8);white-space:nowrap}
+.gps::before{content:'';display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#e0a100;vertical-align:0}
+.gps[data-q=ok]::before{background:#13a34a}.gps[data-q=bad]::before{background:#d42020}
 .bigwrap{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;min-height:150px}
-.lbig{font-size:clamp(84px,min(32vw,24vh),230px);line-height:.92;white-space:nowrap}
-.bigu{font-size:18px;font-weight:600;opacity:.85;margin-top:8px;max-width:26em;text-wrap:balance}
+.lbig{font-size:clamp(88px,min(34vw,25vh),240px);line-height:.92;white-space:nowrap}
+.bigu{font-size:19px;font-weight:700;color:#222;margin-top:8px;max-width:26em;text-wrap:balance}
 .tgt{margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:4px}
-.tgt b{font-size:22px;font-weight:700;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.22)}
-.tgt[data-s=slow] b{background:#111}
-.tgt span{font-size:14px;opacity:.85}
-.lane{height:8px;border-radius:4px;background:rgba(255,255,255,.25);overflow:hidden;position:relative}
-.lane i{position:absolute;inset:0 auto 0 0;background:#fff;width:0;border-radius:4px;transition:width .25s linear}
-.next{margin:0;font-weight:500;opacity:.9;font-size:15px}
+.tgt b{font-size:23px;font-weight:800;padding:8px 18px;border-radius:999px;background:#e9e9ec}
+.tgt[data-s=slow] b{background:#000;color:#fff}
+.tgt span{font-size:15px;font-weight:600;color:#333}
+.lane{height:12px;border-radius:6px;background:#e4e4e8;overflow:hidden;position:relative}
+.lane i{position:absolute;inset:0 auto 0 0;background:#000;width:0;border-radius:6px;transition:width .25s linear}
+.next{margin:0;font-weight:700;color:#222;font-size:16px}
 .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.stats div{background:rgba(255,255,255,.14);border-radius:16px;padding:10px 14px}
-.stats b{display:block;font-size:28px;line-height:1.15;white-space:nowrap}
-.stats span{font-size:13px;opacity:.85}
+.stats div{background:#f1f1f3;border-radius:16px;padding:10px 14px}
+.stats b{display:block;font-size:30px;line-height:1.15;white-space:nowrap}
+.stats span{font-size:14px;font-weight:600;color:#4a4a51}
 .ctl{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
 .ctl.two{grid-template-columns:2fr 1fr}
-.ctl .go{min-height:62px;border:0;border-radius:999px;background:#fff;color:#111;font-size:19px;font-weight:700}
-.ctl .go:disabled{opacity:.45}
-.ctl .sec{min-height:62px;border:0;border-radius:999px;background:rgba(255,255,255,.18);color:#fff;font-size:16px;font-weight:650;line-height:1.15;padding:0 6px}
-.ctl .sec.warn{background:#fff;color:#d3261b}
+.ctl .go{min-height:64px;border:0;border-radius:999px;background:#000;color:#fff;font-size:20px;font-weight:800}
+.ctl .go:disabled{opacity:.35}
+.ctl .sec{min-height:64px;border:0;border-radius:999px;background:#e4e4e8;color:#000;font-size:17px;font-weight:700;line-height:1.15;padding:0 6px}
+.ctl .sec.warn{background:var(--bad);color:#fff}
 @media(max-height:640px){.stats b{font-size:22px}.full{gap:10px}.ctl .go,.ctl .sec{min-height:54px}.start{width:112px;height:112px}.brow{grid-template-columns:56px 112px 56px}.rb{width:56px;height:56px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -411,9 +410,11 @@ let cur='home',drawerOpen=false,pendingNav=null;
 function show(v){for(const id of VIEWS)$('#s-'+id).hidden=id!==v;
   document.body.classList.toggle('fixed',v==='home'||v==='workout');
   if(ROOT.includes(v)){cur=v;$$('.dn [data-nav]').forEach(b=>b.setAttribute('aria-current',b.dataset.nav===v?'page':'false'))}
+  if(v!=='workout')setTC('#ffffff');
   if(v==='home')homeOn();else homeOff();
   if(v==='activity')renderActivity();
   window.scrollTo(0,0)}
+function setTC(c){const m=$('#tc');if(m&&m.content!==c)m.content=c}
 function go(v,push){show(v);try{history[push?'pushState':'replaceState'](null,'','#'+v)}catch(e){}}
 function setDrawer(o){drawerOpen=o;$('#drawer').classList.toggle('open',o);$('#scrim').classList.toggle('on',o);if(o)$('#dhSub').textContent=`${km(monthKm())} km this month`}
 function openDrawer(){setDrawer(true);try{history.pushState(null,'','#menu')}catch(e){}}
@@ -430,8 +431,8 @@ window.addEventListener('popstate',()=>{
 
 /* ---------- maps ---------- */
 const hasMap=()=>opts.map&&window.L;
-function tiles(m){const dark=matchMedia('(prefers-color-scheme: dark)').matches;
-  L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark?'dark_all':'light_all'}/{z}/{x}/{y}{r}.png`,{subdomains:'abcd',maxZoom:20,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>'}).addTo(m)}
+function tiles(m){
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>'}).addTo(m)}
 let map=null,meMk=null,homeWatch=null,homeFix=null,homeErr=null,rmap=null;
 function homeOn(){
   $('#map').classList.toggle('nomap',!hasMap());
@@ -698,6 +699,7 @@ function setCtl(s){const free=R.phases[0].type==='free',ready=s==='gps'&&R.acc!=
     :Bt(s==='pause'?'resume':'pause',s==='pause'?'Resume':'Pause','go')+(free?'':Bt('skip','Skip','sec'))+Bt('end',R.endArm?'Tap to end':'End','sec'+(R.endArm?' warn':''))}
 function renderRun(){if(!R)return;const s=R.state,run=$('#s-workout'),ph=R.phases[Math.max(0,R.i)],tg=$('#tgt');
   run.dataset.k=s==='gps'||s==='count'?'idle':ph.kind;run.classList.toggle('paused',s==='pause');
+  setTC(s==='pause'?'#bdbdc2':({work:'#ff4d2e',rec:'#7fb0ff',easy:'#cfd2d8'})[run.dataset.k]||'#e4e4e8');
   const g=$('#gps');g.textContent=R.sim?'Demo':R.acc==null?'GPS …':`GPS ±${Math.round(R.acc)} m`;
   g.dataset.q=R.sim||(R.acc!=null&&R.acc<=15)?'ok':R.acc!=null&&R.acc<=30?'mid':'bad';
   tg.hidden=true;$('#lane').hidden=ph.type==='free';
