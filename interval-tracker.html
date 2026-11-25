@@ -84,7 +84,7 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid
 .kpis b{display:block;font:700 34px/1.1 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}
 .kpis span{color:var(--mut);font-size:14px}
 .bars{display:grid;gap:8px}
-.br{display:grid;grid-template-columns:3.6em minmax(0,1fr) auto;gap:10px;align-items:center}
+.br{display:grid;grid-template-columns:1.6em minmax(0,1fr) auto;gap:10px;align-items:center}
 .br .t{height:26px;background:var(--line);border-radius:6px;overflow:hidden}
 .br .t i{display:block;height:100%;background:var(--acc);border-radius:6px}
 .br .t i.best{background:var(--ink)}
@@ -98,25 +98,41 @@ details{margin-top:16px}summary{min-height:44px;display:flex;align-items:center;
 #done .ctl{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:26px}
 #done .top{padding:max(4px,env(safe-area-inset-top)) 0 16px;border-bottom:2px solid var(--line);margin-bottom:18px}
 #done .sub{color:var(--mut);opacity:1}
+.wn{display:grid;gap:4px;margin-bottom:14px}.wn span{font-size:14px;color:var(--mut)}
+.wn input,.bname{font:600 22px/1.2 'Barlow Condensed',sans-serif;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);width:100%}
+.plan{margin:0;padding-left:1.4em;display:grid;gap:2px}.plan b{font-weight:600;margin-right:4px}
+.blk{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:12px}
+.bh{display:flex;gap:8px;align-items:center;padding:10px 10px 10px 12px;background:color-mix(in srgb,var(--easy) 16%,var(--card))}
+.blk[data-k=work] .bh{background:color-mix(in srgb,var(--work) 18%,var(--card))}
+.bname{background:transparent;border-color:transparent;padding:6px 8px;flex:1}
+.bname:hover,.bname:focus{border-color:var(--line);background:var(--card)}
+.bmv{display:flex;gap:4px}.bmv button{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:18px}
+.bmv button:disabled{opacity:.35}
+.bb{padding:0 16px}
+input.bad{border-color:#d33;background:color-mix(in srgb,#d33 10%,var(--bg))}
+.add{width:100%;border-style:dashed;color:var(--mut)}
+.wact{display:flex;gap:20px;margin:6px 0 10px}
+.tgt{margin-top:14px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tgt b{font:700 26px/1 'Barlow Condensed',sans-serif;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.22)}
+.tgt[data-s=slow] b{background:#1b1b1b}
+.tgt span{font-size:14px;opacity:.88}
+.grp h2 small{font:500 16px Barlow,sans-serif;color:var(--mut);margin-left:6px}
+.gsub{margin:-4px 0 12px;color:var(--mut);font-size:15px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
 
 <div id="setup">
-  <header class="hero"><div class="in"><h1>Intervals</h1><p class="sub">GPS distance intervals for the track, road or park.</p></div><div class="lanes"></div></header>
+  <header class="hero"><div class="in"><h1>Intervals</h1><p class="sub">Build a session, then run it with GPS, voice cues and pace checks.</p></div><div class="lanes"></div></header>
   <main class="scr">
-    <div class="presets" id="presets" aria-label="Presets"></div>
-    <form id="f" class="card" autocomplete="off">
-      <div class="row"><label class="sw"><input type="checkbox" id="warm">Warm-up</label><div class="num"><input id="warmM" type="number" inputmode="numeric" min="0" step="100" aria-label="Warm-up distance"><span>m</span></div></div>
-      <div class="row"><span class="lab">Reps</span><div class="step"><button type="button" data-st="-1" aria-label="Fewer reps">−</button><input id="reps" type="number" inputmode="numeric" min="1" max="50" aria-label="Reps"><button type="button" data-st="1" aria-label="More reps">+</button></div></div>
-      <div class="row"><span class="lab">Rep distance</span><div class="num"><input id="work" type="number" inputmode="numeric" min="50" step="50" aria-label="Rep distance"><span>m</span></div></div>
-      <div class="chips" id="workChips"></div>
-      <div class="row"><span class="lab">Recovery by</span><div class="seg"><button type="button" data-rt="dist">Distance</button><button type="button" data-rt="time">Time</button></div></div>
-      <div class="row"><span class="lab" id="recLab">Recovery</span><div class="num"><input id="rec" type="number" inputmode="numeric" min="0" aria-label="Recovery amount"><span id="recU">m</span></div></div>
-      <div class="row"><label class="sw"><input type="checkbox" id="cool">Cool-down</label><div class="num"><input id="coolM" type="number" inputmode="numeric" min="0" step="100" aria-label="Cool-down distance"><span>m</span></div></div>
-    </form>
+    <div class="presets" id="wos" aria-label="Workouts"></div>
+    <label class="wn"><span>Workout name</span><input id="woName" maxlength="40"></label>
+    <ol class="plan" id="plan"></ol>
     <p class="sum" id="sum"></p>
+    <div id="blocks"></div>
+    <button type="button" class="sec add" id="bAdd">+ Add block</button>
+    <div class="wact"><button type="button" class="link" id="bSave">Save workout</button><button type="button" class="link" id="bDel" hidden>Delete saved</button></div>
     <div class="opts"><label class="sw"><input type="checkbox" id="oVoice">Voice cues</label><label class="sw"><input type="checkbox" id="oVib">Vibrate</label></div>
     <button class="go" id="bStart">Start</button>
     <button class="link" id="bDemo">Try a demo run (simulated GPS, 8× speed)</button>
@@ -127,7 +143,7 @@ details{margin-top:16px}summary{min-height:44px;display:flex;align-items:center;
 
 <main id="run" class="scr" hidden>
   <div class="rtop"><span id="phLabel" class="ph"></span><span id="gps" class="gps"></span></div>
-  <div class="bigwrap"><div id="big" class="big"></div><div id="bigU" class="bigu"></div></div>
+  <div class="bigwrap"><div id="big" class="big"></div><div id="bigU" class="bigu"></div><div id="tgt" class="tgt" hidden><b id="tgtS"></b><span id="tgtT"></span></div></div>
   <div class="lane"><i id="bar"></i></div>
   <p id="next" class="next"></p>
   <div class="stats">
@@ -142,9 +158,7 @@ details{margin-top:16px}summary{min-height:44px;display:flex;align-items:center;
 <main id="done" class="scr" hidden>
   <header class="top"><h1 id="dTitle">Workout done</h1><p class="sub" id="dSub"></p></header>
   <div class="kpis" id="kpis"></div>
-  <h2 id="repsH">Reps</h2>
-  <div id="bars" class="bars"></div>
-  <div class="scroll"><table id="tbl"></table></div>
+  <div id="groups"></div>
   <details><summary>All segments</summary><div class="scroll"><table id="tblAll"></table></div></details>
   <div class="ctl"><button id="bCopy" class="sec">Copy results</button><button id="bBack" class="go">Done</button></div>
 </main>
@@ -155,15 +169,17 @@ const $=s=>document.querySelector(s);
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
-const PRESETS=[
-  {name:'6 × 400 m',warm:1,warmM:1000,reps:6,work:400,recType:'dist',rec:200,cool:1,coolM:1000},
-  {name:'5 × 1 km',warm:1,warmM:1500,reps:5,work:1000,recType:'time',rec:90,cool:1,coolM:1000},
-  {name:'10 × 200 m',warm:1,warmM:1000,reps:10,work:200,recType:'dist',rec:200,cool:1,coolM:800},
-  {name:'4 × 800 m',warm:1,warmM:1500,reps:4,work:800,recType:'time',rec:120,cool:1,coolM:1000},
-  {name:'3 × 1600 m',warm:1,warmM:1500,reps:3,work:1600,recType:'dist',rec:400,cool:1,coolM:1000}
+const clone=o=>JSON.parse(JSON.stringify(o));
+const B=(name,reps,dist,hard,pace,recType,rec)=>({name,reps,dist,hard,pace,recType,rec});
+const BUILTIN=[
+  {name:'5 × 600 @ 4:50',blocks:[B('Warm-up',1,1200,0,'','none',0),B('Strides',3,80,1,'','dist',80),B('Main set',5,600,1,'4:50','dist',300)]},
+  {name:'6 × 400 m',blocks:[B('Warm-up',1,1000,0,'','none',0),B('Reps',6,400,1,'','dist',200),B('Cool-down',1,1000,0,'','none',0)]},
+  {name:'5 × 1 km',blocks:[B('Warm-up',1,1500,0,'','none',0),B('Reps',5,1000,1,'','time',90),B('Cool-down',1,1000,0,'','none',0)]},
+  {name:'10 × 200 m',blocks:[B('Warm-up',1,1000,0,'','none',0),B('Reps',10,200,1,'','dist',200),B('Cool-down',1,800,0,'','none',0)]},
+  {name:'3 × 1600 m',blocks:[B('Warm-up',1,1500,0,'','none',0),B('Reps',3,1600,1,'','dist',400),B('Cool-down',1,1000,0,'','none',0)]}
 ];
-const CHIPS=[200,300,400,600,800,1000,1600,2000];
-let plan=Object.assign({},PRESETS[0],LS.get('iv-plan',{}));
+let wo=LS.get('iv-cur2',null)||clone(BUILTIN[0]);
+let saved=LS.get('iv-wos',[]);
 let opts=Object.assign({voice:true,vib:true},LS.get('iv-opts',{}));
 let R=null,loop=null,watchId=null,wl=null,ac=null;
 
@@ -174,57 +190,70 @@ function fmtP(s){if(!s||!isFinite(s)||s>1800)return '--:--';let m=Math.floor(s/6
 const dShort=m=>m>=1000&&m%100===0?`${m/1000} km`:`${Math.round(m)} m`;
 const fmtKm=m=>(m/1000).toFixed(2)+' km';
 const secTxt=s=>s>=60&&s%60===0?`${s/60} min`:`${s} s`;
+const sDiff=(d,t)=>d===0?(t?'on target':'±0 s'):(d>0?'+':'−')+Math.abs(d)+' s';
 function sayT(ms){const s=Math.round(ms/1000);if(s<60)return s+' seconds';const m=Math.floor(s/60),r=s%60;return `${m} minute${m>1?'s':''}`+(r?` ${r}`:'')}
 const sayD=m=>m>=1000&&m%1000===0?`${m/1000} kilometre${m>1000?'s':''}`:m>=1000&&m%100===0?`${m/1000} k`:`${m} metres`;
+const sayPace=s=>`${Math.floor(s/60)} ${pad(s%60)}`;
+function parsePace(s){const m=/^\s*(\d{1,2})[:.](\d{2})\s*$/.exec(s||'');return m&&+m[2]<60?+m[1]*60+ +m[2]:null}
 function hav(a,b){const E=6371000,r=Math.PI/180,dl=(b.lat-a.lat)*r,dn=(b.lon-a.lon)*r,x=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dn/2)**2;return 2*E*Math.asin(Math.sqrt(x))}
-
-/* ---------- setup ---------- */
-function summaryText(p){return `${p.reps} × ${dShort(p.work)}, ${p.recType==='time'?secTxt(p.rec)+' rest':dShort(p.rec)+' jog'}`}
-function totalDist(p){return (p.warm?p.warmM:0)+(p.cool?p.coolM:0)+p.reps*p.work+(p.recType==='dist'?(p.reps-1)*p.rec:0)}
-function buildPhases(p){const a=[];
-  if(p.warm&&p.warmM>0)a.push({kind:'warm',label:'Warm-up',type:'dist',v:p.warmM});
-  for(let i=1;i<=p.reps;i++){a.push({kind:'work',label:`Rep ${i}`,rep:i,type:'dist',v:p.work});
-    if(i<p.reps&&p.rec>0)a.push({kind:'rec',label:'Recovery',rep:i,type:p.recType,v:p.recType==='time'?p.rec*1000:p.rec})}
-  if(p.cool&&p.coolM>0)a.push({kind:'cool',label:'Cool-down',type:'dist',v:p.coolM});
-  return a}
-const descPhase=ph=>`${ph.label} · ${ph.type==='dist'?dShort(ph.v):fmtT(ph.v)}`;
 const clampInt=(v,lo,hi)=>{const n=parseInt(v,10);return isNaN(n)?lo:Math.min(hi,Math.max(lo,n))};
 
-$('#presets').innerHTML=PRESETS.map((p,i)=>`<button type="button" data-p="${i}">${p.name}</button>`).join('');
-$('#workChips').innerHTML=CHIPS.map(m=>`<button type="button" data-w="${m}">${dShort(m)}</button>`).join('');
+/* ---------- workout model ---------- */
+const bName=b=>(b.name||'').trim()||'Block';
+function buildPhases(w){const a=[];
+  w.blocks.forEach((b,bi)=>{const n=b.reps,pace=b.hard?parsePace(b.pace):parsePace(b.pace),nm=bName(b);
+    for(let r=1;r<=n;r++){a.push({kind:b.hard?'work':'easy',label:n>1?`${nm} ${r}/${n}`:nm,name:nm,block:bi,rep:r,n,type:'dist',v:b.dist,pace});
+      if(r<n&&b.recType!=='none'&&b.rec>0)a.push({kind:'rec',label:'Recovery',block:bi,type:b.recType,v:b.recType==='time'?b.rec*1000:b.rec})}});
+  return a}
+const totalDist=w=>w.blocks.reduce((t,b)=>t+b.reps*b.dist+(b.recType==='dist'&&b.reps>1?(b.reps-1)*b.rec:0),0);
+const descPhase=ph=>`${ph.label} · ${ph.type==='dist'?dShort(ph.v):fmtT(ph.v)}${ph.pace?' @ '+fmtP(ph.pace):''}`;
+function blockDesc(b){let s=(b.reps>1?`${b.reps} × `:'')+dShort(b.dist);const p=parsePace(b.pace);if(p)s+=` @ ${fmtP(p)}/km`;
+  if(b.reps>1&&b.recType!=='none'&&b.rec)s+=b.recType==='time'?`, ${secTxt(b.rec)} rest`:`, ${dShort(b.rec)} jog`;return s}
 
-function writeForm(){
-  $('#warm').checked=!!plan.warm;$('#warmM').value=plan.warmM;$('#reps').value=plan.reps;$('#work').value=plan.work;
-  $('#rec').value=plan.rec;$('#cool').checked=!!plan.cool;$('#coolM').value=plan.coolM;
-  $('#oVoice').checked=opts.voice;$('#oVib').checked=opts.vib;updUI()}
-function updUI(){
-  document.querySelectorAll('[data-rt]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.rt===plan.recType));
-  document.querySelectorAll('[data-w]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.w===plan.work));
-  document.querySelectorAll('[data-p]').forEach(b=>{const p=PRESETS[b.dataset.p];b.setAttribute('aria-pressed',['warm','warmM','reps','work','recType','rec','cool','coolM'].every(k=>p[k]==plan[k]))});
-  $('#recLab').textContent=plan.recType==='time'?'Recovery time':'Recovery distance';$('#recU').textContent=plan.recType==='time'?'sec':'m';
-  $('#warmM').disabled=!plan.warm;$('#coolM').disabled=!plan.cool;
-  const extra=plan.recType==='time'&&plan.reps>1&&plan.rec?` plus ${plan.reps-1} × ${secTxt(plan.rec)} rests`:'';
-  $('#sum').textContent=`${summaryText(plan)} · about ${fmtKm(totalDist(plan))} total${extra}`;
-  LS.set('iv-plan',plan);LS.set('iv-opts',opts)}
-function readForm(){
-  plan.warm=$('#warm').checked?1:0;plan.warmM=clampInt($('#warmM').value,0,20000);plan.reps=clampInt($('#reps').value,1,50);
-  plan.work=clampInt($('#work').value,50,42195);plan.rec=clampInt($('#rec').value,0,plan.recType==='time'?1800:10000);
-  plan.cool=$('#cool').checked?1:0;plan.coolM=clampInt($('#coolM').value,0,20000);
-  opts.voice=$('#oVoice').checked;opts.vib=$('#oVib').checked;updUI()}
-$('#setup').addEventListener('input',readForm);
-$('#setup').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.p){plan=Object.assign({},PRESETS[b.dataset.p]);writeForm()}
-  else if(b.dataset.w){plan.work=+b.dataset.w;$('#work').value=plan.work;updUI()}
-  else if(b.dataset.st){plan.reps=clampInt(plan.reps+ +b.dataset.st,1,50);$('#reps').value=plan.reps;updUI()}
-  else if(b.dataset.rt&&b.dataset.rt!==plan.recType){plan.recType=b.dataset.rt;plan.rec=plan.recType==='time'?90:200;$('#rec').value=plan.rec;updUI()}
-  else if(b.dataset.h!=null){const h=LS.get('iv-hist',[]);if(h[b.dataset.h])showDone(h[b.dataset.h])}
-  else if(b.id==='bClear'){if(b.dataset.arm){LS.set('iv-hist',[]);renderHist()}else{b.dataset.arm=1;b.textContent='Tap again to clear history'}}
-});
+/* ---------- setup screen ---------- */
+function save(){LS.set('iv-cur2',wo);LS.set('iv-opts',opts);updSum();renderWos()}
+function updSum(){const n=buildPhases(wo).length;$('#sum').textContent=`About ${fmtKm(totalDist(wo))} · ${n} segment${n>1?'s':''}`;
+  $('#plan').innerHTML=wo.blocks.map(b=>`<li><b>${esc(bName(b))}</b> ${esc(blockDesc(b))}</li>`).join('')}
+function renderWos(){const cur=JSON.stringify(wo);
+  $('#wos').innerHTML=BUILTIN.map((w,i)=>`<button type="button" data-wo="b${i}" aria-pressed="${JSON.stringify(w)===cur}">${esc(w.name)}</button>`).join('')+
+    saved.map((w,i)=>`<button type="button" data-wo="s${i}" aria-pressed="${JSON.stringify(w)===cur}">${esc(w.name)}</button>`).join('');
+  const isSaved=saved.some(w=>w.name===wo.name.trim());$('#bDel').hidden=!isSaved;$('#bSave').textContent=isSaved?'Update saved':'Save workout'}
+function blkHTML(b,i){const bad=b.pace&&parsePace(b.pace)==null,last=wo.blocks.length-1;
+  const rec=b.reps>1?`<div class="row"><span class="lab">Between reps</span><div class="seg">${[['dist','Jog'],['time','Rest'],['none','None']].map(t=>`<button type="button" data-a="rt" data-v="${t[0]}" aria-pressed="${b.recType===t[0]}">${t[1]}</button>`).join('')}</div></div>`+
+    (b.recType!=='none'?`<div class="row"><span class="lab">${b.recType==='time'?'Rest time':'Jog distance'}</span><div class="num"><input data-f="rec" type="number" inputmode="numeric" min="0" value="${b.rec}" aria-label="Recovery amount"><span>${b.recType==='time'?'sec':'m'}</span></div></div>`:''):'';
+  return `<section class="blk" data-b="${i}" data-k="${b.hard?'work':'easy'}">
+  <div class="bh"><input class="bname" data-f="name" value="${esc(b.name)}" maxlength="24" aria-label="Block name"><div class="bmv"><button type="button" data-a="up" aria-label="Move block up"${i?'':' disabled'}>↑</button><button type="button" data-a="down" aria-label="Move block down"${i<last?'':' disabled'}>↓</button><button type="button" data-a="del" aria-label="Delete block"${last?'':' disabled'}>×</button></div></div>
+  <div class="bb">
+  <div class="row"><span class="lab">Reps</span><div class="step"><button type="button" data-a="rm" aria-label="Fewer reps">−</button><input data-f="reps" type="number" inputmode="numeric" min="1" max="50" value="${b.reps}" aria-label="Reps"><button type="button" data-a="rp" aria-label="More reps">+</button></div></div>
+  <div class="row"><span class="lab">${b.reps>1?'Distance each':'Distance'}</span><div class="num"><input data-f="dist" type="number" inputmode="numeric" min="20" step="10" value="${b.dist}" aria-label="Distance"><span>m</span></div></div>
+  <div class="row"><span class="lab">Effort</span><div class="seg"><button type="button" data-a="eff" data-v="0" aria-pressed="${!b.hard}">Easy</button><button type="button" data-a="eff" data-v="1" aria-pressed="${!!b.hard}">Hard</button></div></div>
+  <div class="row"><span class="lab">Target pace</span><div class="num"><input data-f="pace" class="${bad?'bad':''}" inputmode="decimal" placeholder="none" value="${esc(b.pace||'')}" aria-label="Target pace in minutes and seconds per km"><span>/km</span></div></div>
+  ${rec}</div></section>`}
+function renderEd(){$('#woName').value=wo.name;$('#blocks').innerHTML=wo.blocks.map(blkHTML).join('');$('#oVoice').checked=opts.voice;$('#oVib').checked=opts.vib;save()}
 
+$('#blocks').addEventListener('input',e=>{const el=e.target,k=el.closest('[data-b]');if(!k)return;const b=wo.blocks[k.dataset.b],f=el.dataset.f;
+  if(f==='name')b.name=el.value;else if(f==='reps')b.reps=clampInt(el.value,1,50);else if(f==='dist')b.dist=clampInt(el.value,20,42195);
+  else if(f==='rec')b.rec=clampInt(el.value,0,b.recType==='time'?1800:10000);else if(f==='pace'){b.pace=el.value.trim();el.classList.toggle('bad',!!b.pace&&parsePace(b.pace)==null)}
+  save()});
+$('#blocks').addEventListener('change',e=>{if(e.target.dataset.f==='reps')renderEd()});
+$('#blocks').addEventListener('click',e=>{const el=e.target.closest('button');if(!el||el.disabled)return;const i=+el.closest('[data-b]').dataset.b,b=wo.blocks[i],a=el.dataset.a,L=wo.blocks;
+  if(a==='up')[L[i-1],L[i]]=[L[i],L[i-1]];else if(a==='down')[L[i+1],L[i]]=[L[i],L[i+1]];else if(a==='del')L.splice(i,1);
+  else if(a==='rm')b.reps=Math.max(1,b.reps-1);else if(a==='rp')b.reps=Math.min(50,b.reps+1);
+  else if(a==='eff')b.hard=+el.dataset.v;else if(a==='rt'&&b.recType!==el.dataset.v){b.recType=el.dataset.v;b.rec=b.recType==='time'?60:200}
+  renderEd()});
+$('#bAdd').addEventListener('click',()=>{wo.blocks.push(B('Reps',4,400,1,'','dist',200));renderEd();$('#blocks').lastElementChild.scrollIntoView({behavior:'smooth',block:'center'})});
+$('#woName').addEventListener('input',e=>{wo.name=e.target.value;save()});
+$('#setup').addEventListener('change',e=>{if(e.target.id==='oVoice'||e.target.id==='oVib'){opts.voice=$('#oVoice').checked;opts.vib=$('#oVib').checked;save()}});
+$('#wos').addEventListener('click',e=>{const b=e.target.closest('[data-wo]');if(!b)return;const id=b.dataset.wo;wo=clone(id[0]==='b'?BUILTIN[+id.slice(1)]:saved[+id.slice(1)]);renderEd()});
+$('#bSave').addEventListener('click',()=>{wo.name=wo.name.trim()||'My workout';const i=saved.findIndex(w=>w.name===wo.name);if(i>=0)saved[i]=clone(wo);else saved.push(clone(wo));LS.set('iv-wos',saved);renderEd();$('#bSave').textContent='Saved'});
+$('#bDel').addEventListener('click',e=>{const b=e.currentTarget;if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Tap again to delete';setTimeout(()=>{delete b.dataset.arm;b.textContent='Delete saved'},3000);return}
+  saved=saved.filter(w=>w.name!==wo.name.trim());LS.set('iv-wos',saved);delete b.dataset.arm;b.textContent='Delete saved';renderWos()});
+$('#hist').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.h!=null){const h=LS.get('iv-hist',[]);if(h[b.dataset.h])showDone(h[b.dataset.h])}
+  else if(b.id==='bClear'){if(b.dataset.arm){LS.set('iv-hist',[]);renderHist()}else{b.dataset.arm=1;b.textContent='Tap again to clear history'}}});
 function renderHist(){const h=LS.get('iv-hist',[]),el=$('#hist');
   if(!h.length){el.innerHTML='';return}
   el.innerHTML='<h2>Recent workouts</h2><ul class="hl">'+h.slice(0,10).map((r,i)=>`<li><button type="button" data-h="${i}"><span>${esc(r.name)}${r.sim?' (demo)':''}</span><small>${esc(new Date(r.d).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}))} · ${fmtKm(r.total)} · ${fmtT(r.time)}</small></button></li>`).join('')+'</ul><button type="button" class="link" id="bClear">Clear history</button>'}
-
 function show(id){['setup','run','done'].forEach(x=>$('#'+x).hidden=x!==id);window.scrollTo(0,0)}
 
 /* ---------- feedback ---------- */
@@ -239,7 +268,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('beforeunload',e=>{if(R&&(R.state==='run'||R.state==='pause')){e.preventDefault();e.returnValue=''}});
 
 /* ---------- run engine ---------- */
-function newRun(sim){R={plan:Object.assign({},plan),phases:buildPhases(plan),i:-1,state:'gps',acc:null,last:null,total:0,pd:0,pStart:0,act:0,resumed:null,buf:[],splits:[],cued:{},sim,simT:Date.now(),ctlKey:'',err:''}}
+function newRun(sim){R={wo:clone(wo),phases:buildPhases(wo),i:-1,state:'gps',acc:null,last:null,total:0,pd:0,pStart:0,act:0,resumed:null,buf:[],splits:[],cued:{},sim,simT:Date.now(),ctlKey:'',err:''}}
 function startGPS(){
   if(!window.isSecureContext){R.err='GPS only works when this page is opened from an https:// address.';return}
   if(!navigator.geolocation){R.err='This browser has no access to location.';return}
@@ -251,9 +280,9 @@ function onFix(pos){if(!R||R.sim||R.state==='done')return;const c=pos.coords;R.a
   const p={lat:c.latitude,lon:c.longitude,t:act()};
   if(!R.last){R.last=p;return}
   const d=hav(R.last,p),dt=(p.t-R.last.t)/1000;
-  if(d<Math.max(2,c.accuracy*.25))return;           // jitter while standing
+  if(d<Math.max(2,c.accuracy*.25))return;
   const t0=R.last.t;R.last=p;
-  if(dt<=0||d/dt>12)return;                           // implausible jump: re-anchor, add nothing
+  if(dt<=0||d/dt>12)return;
   addDist(d,t0,p.t)}
 function addDist(d,t0,t1){
   while(d>0&&R.state==='run'){const ph=R.phases[R.i];
@@ -265,20 +294,25 @@ function addDist(d,t0,t1){
   distCues()}
 function curPace(){const b=R.buf;if(b.length<2)return null;const L=b[b.length-1];if(act()-L[0]>8000)return null;
   let f=b[0];for(const x of b){if(x[0]>=L[0]-15000){f=x;break}}const dt=L[0]-f[0],dd=L[1]-f[1];return dd<5||dt<3000?null:dt/dd}
+const paceDelta=()=>{const ph=R.phases[R.i];return (act()-R.pStart)/1000-ph.pace*R.pd/1000};
 function distCues(){if(R.state!=='run')return;const ph=R.phases[R.i];if(ph.kind!=='work')return;
-  if(ph.v>=800&&!R.cued.h&&R.pd>=ph.v/2){R.cued.h=1;say('Halfway. '+sayT(act()-R.pStart))}
+  if(ph.pace&&ph.v>=400){const cp=Math.floor(R.pd/200)*200;
+    if(cp>=200&&cp<ph.v&&!R.cued['p'+cp]){R.cued['p'+cp]=1;const d=Math.round(paceDelta());say(Math.abs(d)<=1?'On pace':`${Math.abs(d)} seconds ${d<0?'ahead':'behind'}`)}}
+  else if(ph.v>=800&&!R.cued.h&&R.pd>=ph.v/2){R.cued.h=1;say('Halfway. '+sayT(act()-R.pStart))}
   if(ph.v>=300&&!R.cued.c&&ph.v-R.pd<=100){R.cued.c=1;say('100 to go');buzz(120)}}
 function endPhase(t){const ph=R.phases[R.i],time=t-R.pStart;
-  R.splits.push({kind:ph.kind,label:ph.label,rep:ph.rep,dist:R.pd,time});
-  if(ph.kind==='work')say(`${ph.label} done in ${sayT(time)}.`);
+  R.splits.push({kind:ph.kind,label:ph.label,block:ph.block,rep:ph.rep,dist:R.pd,time,pace:ph.pace||null});
+  if(ph.kind==='work'){let m=`${ph.n>1?ph.name+' '+ph.rep:ph.name} done in ${sayT(time)}.`;
+    if(ph.pace&&R.pd>50){const d=Math.round(time/1000-ph.pace*R.pd/1000);m+=d===0?' Right on target.':` ${Math.abs(d)} second${Math.abs(d)>1?'s':''} ${d<0?'fast':'slow'}.`}say(m)}
   startPhase(R.i+1,t)}
 function startPhase(i,t){R.i=i;R.pStart=t;R.pd=0;R.cued={};
   if(i>=R.phases.length){finish();return}
-  const ph=R.phases[i],n=R.plan.reps;
-  if(ph.kind==='work'){buzz([300,120,300]);beep(988,.25);say((ph.rep===n&&n>1?'Last rep! ':`Rep ${ph.rep} of ${n}. `)+sayD(ph.v)+'. Go!')}
-  else{buzz(250);beep(523,.25);say(ph.kind==='rec'?'Recover. '+(ph.type==='time'?sayT(ph.v):sayD(ph.v)):ph.kind==='warm'?'Warm up. '+sayD(ph.v):'Cool down. '+sayD(ph.v))}}
+  const ph=R.phases[i];
+  if(ph.kind==='work'){buzz([300,120,300]);beep(988,.25);
+    say((ph.n>1?(ph.rep===ph.n?'Last one. ':'')+`${ph.name} ${ph.rep} of ${ph.n}. `:`${ph.name}. `)+sayD(ph.v)+(ph.pace?` at ${sayPace(ph.pace)}`:'')+'. Go!')}
+  else{buzz(250);beep(523,.25);say(ph.kind==='rec'?'Recover. '+(ph.type==='time'?sayT(ph.v):sayD(ph.v)+' easy'):`${ph.name}. ${sayD(ph.v)}, easy.`)}}
 function simStep(){const ph=R.phases[R.i],ms=200*8,t0=act();R.simT+=ms;
-  const v=(ph.kind==='work'?4.7:2.9)*(.9+Math.random()*.2);addDist(v*ms/1000,t0,act())}
+  const base=ph.kind==='work'?(ph.pace?1000/ph.pace:4.7):2.9;addDist(base*(.93+Math.random()*.14)*ms/1000,t0,act())}
 function tick(){if(!R||R.state==='done')return;
   if(R.sim&&R.state==='run')simStep();
   if(R.state==='run'){const ph=R.phases[R.i];
@@ -292,31 +326,36 @@ function countdown(){R.state='count';R.count=3;beep(660,.12);renderRun();
     R.count--;if(R.count>0){beep(660,.12);renderRun();return}
     clearInterval(iv);R.state='run';R.act=0;R.resumed=now();R.last=null;startPhase(0,0);renderRun()},1000)}
 function finish(){if(!R||R.state==='done')return;const t=act();
-  if(R.i>=0&&R.i<R.phases.length&&R.pd>10){const ph=R.phases[R.i];R.splits.push({kind:ph.kind,label:ph.label+' (part)',rep:ph.rep,dist:R.pd,time:t-R.pStart,partial:1})}
+  if(R.i>=0&&R.i<R.phases.length&&R.pd>10){const ph=R.phases[R.i];R.splits.push({kind:ph.kind,label:ph.label+' (part)',block:ph.block,rep:ph.rep,dist:R.pd,time:t-R.pStart,pace:ph.pace||null,partial:1})}
   R.state='done';clearInterval(loop);stopGPS();lockOff();say('Workout complete.');buzz([200,100,200,100,400]);
-  const rec={d:Date.now(),name:summaryText(R.plan),total:R.total,time:t,splits:R.splits,sim:R.sim};
+  const rec={d:Date.now(),name:R.wo.name,wo:R.wo,total:R.total,time:t,splits:R.splits,sim:R.sim};
   if(R.splits.length){const h=LS.get('iv-hist',[]);h.unshift(rec);LS.set('iv-hist',h.slice(0,30))}
   renderHist();showDone(rec)}
 function quit(){clearInterval(loop);stopGPS();lockOff();try{speechSynthesis.cancel()}catch(e){}R=null;show('setup')}
 
 /* ---------- run screen ---------- */
 function setCtl(s){const ready=s==='gps'&&R.acc!=null&&R.acc<=25,key=s+(R.endArm?'a':'')+(ready?'r':'');if(R.ctlKey===key)return;R.ctlKey=key;
-  const B=(a,t,c,dis)=>`<button type="button" data-act="${a}" class="${c}"${dis?' disabled':''}>${t}</button>`;
-  $('#ctl').innerHTML=s==='gps'?B('go',ready?'Start workout':'Waiting for GPS…','go',!ready)+B('go','Start anyway','sec')+B('cancel','Cancel','sec')
-    :s==='count'?B('cancel','Cancel','sec')
-    :B(s==='pause'?'resume':'pause',s==='pause'?'Resume':'Pause','go')+B('skip','Skip','sec')+B('end',R.endArm?'Tap to end':'End','sec'+(R.endArm?' warn':''))}
-function renderRun(){if(!R)return;const s=R.state,run=$('#run'),ph=R.phases[Math.max(0,R.i)];
+  const Bt=(a,t,c,dis)=>`<button type="button" data-act="${a}" class="${c}"${dis?' disabled':''}>${t}</button>`;
+  $('#ctl').innerHTML=s==='gps'?Bt('go',ready?'Start workout':'Waiting for GPS…','go',!ready)+Bt('go','Start anyway','sec')+Bt('cancel','Cancel','sec')
+    :s==='count'?Bt('cancel','Cancel','sec')
+    :Bt(s==='pause'?'resume':'pause',s==='pause'?'Resume':'Pause','go')+Bt('skip','Skip','sec')+Bt('end',R.endArm?'Tap to end':'End','sec'+(R.endArm?' warn':''))}
+function renderRun(){if(!R)return;const s=R.state,run=$('#run'),ph=R.phases[Math.max(0,R.i)],tg=$('#tgt');
   run.dataset.k=s==='gps'||s==='count'?'idle':ph.kind;run.classList.toggle('paused',s==='pause');
   const g=$('#gps');g.textContent=R.sim?'Demo':R.acc==null?'GPS …':`GPS ±${Math.round(R.acc)} m`;
   g.dataset.q=R.sim||(R.acc!=null&&R.acc<=15)?'ok':R.acc!=null&&R.acc<=30?'mid':'bad';
+  tg.hidden=true;
   if(s==='gps'){$('#phLabel').textContent='Finding GPS';$('#big').textContent=R.acc==null?'…':'±'+Math.round(R.acc);
     $('#bigU').textContent=R.err||(R.acc==null?'Searching for satellites. Stand outside with a clear view of the sky.':'metres accuracy. Ready below 25 m.');
     $('#bar').style.width='0';$('#next').textContent='First: '+descPhase(R.phases[0]);setCtl(s);return}
   if(s==='count'){$('#phLabel').textContent='Get ready';$('#big').textContent=R.count;$('#bigU').textContent=descPhase(R.phases[0]);$('#bar').style.width='0';setCtl(s);return}
   const el=act()-R.pStart;
-  $('#phLabel').textContent=(s==='pause'?'Paused · ':'')+ph.label+(ph.kind==='work'?` of ${R.plan.reps}`:'');
+  $('#phLabel').textContent=(s==='pause'?'Paused · ':'')+ph.label;
   if(ph.type==='dist'){const rem=Math.max(0,ph.v-R.pd);$('#big').textContent=rem>=1000?(rem/1000).toFixed(2):Math.ceil(rem);$('#bigU').textContent=rem>=1000?'km to go':'metres to go';$('#bar').style.width=Math.min(100,R.pd/ph.v*100)+'%'}
-  else{$('#big').textContent=fmtT(ph.v-el,true);$('#bigU').textContent=`recovery left · ${Math.round(R.pd)} m covered`;$('#bar').style.width=Math.min(100,el/ph.v*100)+'%'}
+  else{$('#big').textContent=fmtT(ph.v-el,true);$('#bigU').textContent=`rest left · ${Math.round(R.pd)} m covered`;$('#bar').style.width=Math.min(100,el/ph.v*100)+'%'}
+  if(ph.kind==='work'&&ph.pace){tg.hidden=false;const tgtT=fmtT(ph.pace*ph.v);
+    if(R.pd>=50){const d=Math.round(paceDelta());tg.dataset.s=d>1?'slow':'ok';$('#tgtS').textContent=Math.abs(d)<=1?'On pace':`${Math.abs(d)} s ${d<0?'ahead':'behind'}`}
+    else{tg.dataset.s='ok';$('#tgtS').textContent=`Target ${fmtP(ph.pace)}/km`}
+    $('#tgtT').textContent=`Rep target ${tgtT}`}
   const nx=R.phases[R.i+1];$('#next').textContent=nx?'Next: '+descPhase(nx):'Last segment';
   $('#sTime').textContent=fmtT(el);$('#sPace').textContent=fmtP(curPace());$('#sTotal').textContent=(R.total/1000).toFixed(2);$('#sAll').textContent=fmtT(act());
   setCtl(s)}
@@ -328,7 +367,7 @@ $('#ctl').addEventListener('click',e=>{const b=e.target.closest('button');if(!b|
   else if(a==='skip'){if(R.state==='run'||R.state==='pause')endPhase(act())}
   else if(a==='end'){if(R.endArm){finish();return}R.endArm=1;setTimeout(()=>{if(R)R.endArm=0},3000)}
   if(R&&R.state!=='done')renderRun()});
-function begin(sim){unlock();readForm();newRun(sim);show('run');lockOn();loop=setInterval(tick,200);
+function begin(sim){unlock();newRun(sim);show('run');lockOn();loop=setInterval(tick,200);
   if(sim)countdown();else{startGPS();renderRun()}}
 $('#bStart').addEventListener('click',()=>begin(false));
 $('#bDemo').addEventListener('click',()=>begin(true));
@@ -338,22 +377,30 @@ let copyText='';
 function showDone(r){show('done');
   $('#dTitle').textContent=r.sim?'Demo run done':'Workout done';
   $('#dSub').textContent=`${new Date(r.d).toLocaleString('en-AU',{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · ${r.name}`;
-  const reps=r.splits.filter(s=>s.kind==='work'&&!s.partial&&s.dist>0);
-  const tD=reps.reduce((a,s)=>a+s.dist,0),tT=reps.reduce((a,s)=>a+s.time,0),avg=tD?tT/tD:null;
-  const paces=reps.map(s=>s.time/s.dist),best=paces.length?Math.min(...paces):null,bi=paces.indexOf(best);
-  $('#kpis').innerHTML=[[fmtKm(r.total),'Distance'],[fmtT(r.time),'Total time'],[fmtP(avg),'Avg rep pace /km'],[best?fmtP(best):'--:--',best?`Fastest · Rep ${reps[bi].rep}`:'Fastest rep']].map(k=>`<div><b>${k[0]}</b><span>${k[1]}</span></div>`).join('');
-  $('#repsH').hidden=!reps.length;
-  $('#bars').innerHTML=reps.map((s,i)=>`<div class="br"><span>Rep ${s.rep}</span><div class="t"><i class="${i===bi?'best':''}" style="width:${(best/paces[i]*100).toFixed(1)}%"></i></div><b>${fmtT(s.time)} · ${fmtP(paces[i])}</b></div>`).join('');
-  $('#tbl').innerHTML=reps.length?'<tr><th>Rep</th><th>Distance</th><th>Time</th><th>Pace</th><th>vs avg</th></tr>'+reps.map((s,i)=>{const df=Math.round(paces[i]-avg);return `<tr><td>${s.rep}</td><td>${Math.round(s.dist)} m</td><td>${fmtT(s.time)}</td><td>${fmtP(paces[i])}</td><td>${df===0?'±0 s':(df>0?'+':'−')+Math.abs(df)+' s'}</td></tr>`}).join(''):'';
+  const groups={};r.splits.filter(s=>s.kind==='work'&&!s.partial&&s.dist>0).forEach(s=>{const k=s.block??0;(groups[k]=groups[k]||[]).push(s)});
+  let html='',main=null;const lines=[`${r.name}${r.sim?' (demo)':''} · ${new Date(r.d).toLocaleDateString('en-AU')}`,`Total ${fmtKm(r.total)} in ${fmtT(r.time)}`];
+  for(const k of Object.keys(groups)){const g=groups[k],b=(r.wo&&r.wo.blocks[k])||{name:'Reps',reps:g.length,dist:g[0].dist},pace=g[0].pace;
+    const paces=g.map(s=>s.time/s.dist),best=Math.min(...paces),bi=paces.indexOf(best),tD=g.reduce((a,s)=>a+s.dist,0),avg=g.reduce((a,s)=>a+s.time,0)/tD;
+    const diffs=g.map(s=>pace?Math.round(s.time/1000-pace*s.dist/1000):Math.round((s.time/s.dist-avg)*s.dist/1000));
+    const st={name:bName(b),pace,avg,n:g.length,hits:diffs.filter(d=>Math.abs(d)<=2).length,best,bRep:g[bi].rep,tD};
+    if(!main||(pace&&!main.pace)||(!!pace===!!main.pace&&tD>=main.tD))main=st;
+    html+=`<section class="grp"><h2>${esc(st.name)} <small>${esc((b.reps>1?b.reps+' × ':'')+dShort(b.dist)+(pace?' @ '+fmtP(pace)+'/km':''))}</small></h2>
+      <p class="gsub">${pace?`Target ${fmtT(pace*b.dist)} per rep · `:''}Average ${fmtP(avg)}/km</p>
+      <div class="bars">${g.map((s,i)=>`<div class="br"><span>${s.rep}</span><div class="t"><i class="${i===bi?'best':''}" style="width:${(best/paces[i]*100).toFixed(1)}%"></i></div><b>${fmtT(s.time)} · ${fmtP(paces[i])}</b></div>`).join('')}</div>
+      <div class="scroll"><table><tr><th>Rep</th><th>Distance</th><th>Time</th><th>Pace</th><th>${pace?'vs target':'vs avg'}</th></tr>${g.map((s,i)=>`<tr><td>${s.rep}</td><td>${Math.round(s.dist)} m</td><td>${fmtT(s.time)}</td><td>${fmtP(paces[i])}</td><td>${sDiff(diffs[i],pace)}</td></tr>`).join('')}</table></div></section>`;
+    lines.push(`${st.name}: `+g.map((s,i)=>`${fmtT(s.time)}`).join(', ')+` (avg ${fmtP(avg)}/km${pace?', target '+fmtP(pace):''})`)}
+  const kp=[[fmtKm(r.total),'Distance'],[fmtT(r.time),'Total time']];
+  if(main){kp.push([fmtP(main.avg),`${main.name} avg /km`]);kp.push(main.pace?[`${main.hits}/${main.n}`,'Reps within 2 s of target']:[fmtP(main.best),`Fastest · rep ${main.bRep}`])}
+  $('#kpis').innerHTML=kp.map(k=>`<div><b>${esc(k[0])}</b><span>${esc(k[1])}</span></div>`).join('');
+  $('#groups').innerHTML=html;
   $('#tblAll').innerHTML='<tr><th>Segment</th><th>Distance</th><th>Time</th><th>Pace</th></tr>'+r.splits.map(s=>`<tr><td>${esc(s.label)}</td><td>${Math.round(s.dist)} m</td><td>${fmtT(s.time)}</td><td>${s.dist>5?fmtP(s.time/s.dist):'--:--'}</td></tr>`).join('');
-  copyText=[`${r.name}${r.sim?' (demo)':''} · ${new Date(r.d).toLocaleDateString('en-AU')}`,`Total ${fmtKm(r.total)} in ${fmtT(r.time)} · avg rep pace ${fmtP(avg)}/km`,...reps.map((s,i)=>`Rep ${s.rep}: ${fmtT(s.time)} (${fmtP(paces[i])}/km)`)].join('\n');
-  $('#bCopy').textContent='Copy results'}
+  copyText=lines.join('\n');$('#bCopy').textContent='Copy results'}
 $('#bCopy').addEventListener('click',async()=>{const b=$('#bCopy');
   try{await navigator.clipboard.writeText(copyText);b.textContent='Copied'}
   catch(e){const t=document.createElement('textarea');t.value=copyText;document.body.appendChild(t);t.select();try{document.execCommand('copy');b.textContent='Copied'}catch(x){b.textContent='Copy failed'}t.remove()}});
 $('#bBack').addEventListener('click',()=>{R=null;show('setup');renderHist()});
 
-writeForm();renderHist();
+renderEd();renderHist();
 }
 </script>
 </body>
